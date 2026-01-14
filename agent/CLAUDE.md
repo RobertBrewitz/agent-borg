@@ -36,8 +36,8 @@ PROJECT_OVERVIEW
 - TODO.md - List of tasks you can pick from
 - PROGRESS.md - Log of completed tasks and learnings
 - AGENTS.md - Documentation of important patterns and gotchas for future agents
-- BACKLOG.md - Tasks not yet elaborated enough to be in TODO.md
-- DONE.md - List of fully completed tasks
+- BACKLOG.md - Tasks not yet elaborated, do not work on these tasks.
+- DONE.md - List of fully completed tasks, do not update `DONE.md`
 
 ## TODO.md format
 
