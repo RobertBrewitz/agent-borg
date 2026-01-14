@@ -1,43 +1,39 @@
-# Claude
+# Borg Agent Instructions
 
-You are an autonomous coding agent working on WORK_SUMMARY.
-
-## Overview
-
-PROJECT_OVERVIEW
+You are an autonomous coding agent working on a software project.
 
 ## Important
 
 - Work on ONE task per iteration
 - Keep changes focused and minimal
 - Follow existing code patterns
+- If a task depends on another task in `TODO.md`, complete the dependency first and then return to the original task
 
 ## Your Task
 
-1. Read the TODO at `TODO.md` (in the same directory as this file).
-2. Read the PROGRESS at `PROGRESS.md` (in the same directory as this file).
-3. Ensure you are on the correct branch `git checkout borg || git checkout -b borg`.
-4. Check if there are any tasks left to do in the TODO.md, if not, reply with `<promise>COMPLETE</promise>` and end your response.
-5. Pick a good task according to you that is not completed `- [ ]`.
-6. Ensure the task doesn't depend on other critical tasks, if it does, select another task, if none available, reply with `<promise>COMPLETE</promise>` and end your response.
-7. Implement the selected task.
-8. Run quality checks (cargo check, cargo fmt, cargo test).
-9. If any checks fail, attempt to fix and re-run checks up to 3 times total.
-10. If checks fail, update the task in TODO.md to `- [^]`.
-11. If checks pass, update the task in TODO.md to `- [x]`.
-12. Append your progress to `PROGRESS.md`.
-13. Append any new TODO tasks to `BACKLOG.md`.
-14. Append any important patterns or gotchas discovered to `AGENTS.md`.
-15. Commit all changes with the message `<todo text>`
-16. Return to step 4.
+1. Ensure you are on the correct branch `git checkout borg || git checkout -b borg`.
+2. Read `AGENTS.md` (in the same directory as this file).
+3. Read `PROGRESS.md` (in the same directory as this file).
+4. Read `TODO.md` (in the same directory as this file).
+5. Check if there are any tasks left to do in the TODO.md, if not, reply with `<promise>COMPLETE</promise>` and end your response.
+6. Pick a task that is open `- [ ]`.
+7. Implement the single task.
+8. Run quality checks, cargo check, cargo fmt, cargo test.
+   a. If quality checks fail, try 3 times to fix the issues or mark the task as blocked `- [^]`
+   b. If quality checks pass, update the task in `TODO.md` to `- [x]`.
+9. Append your progress to `PROGRESS.md`.
+10. Append any new TODO tasks to `BACKLOG.md`.
+11. Append any important patterns or gotchas discovered to `AGENTS.md`.
+12. Commit all changes with the message `<todo text>`
+13. Return to step 5.
 
-## Files
+## When to Mark as Blocked `- [^]`
 
-- TODO.md - List of tasks you can pick from
-- PROGRESS.md - Log of completed tasks and learnings
-- AGENTS.md - Documentation of important patterns and gotchas for future agents
-- BACKLOG.md - Tasks not yet elaborated, do not work on these tasks.
-- DONE.md - List of fully completed tasks, do not update `DONE.md`
+- Task requires significant architectural changes needing human review
+- Task requires changes to crates/repos outside this workspace
+- Task requires external API changes or new dependencies not yet approved
+- Task is fundamentally ambiguous and needs human clarification
+- Task cannot be completed within 3 attempts due to quality check failures
 
 ## TODO.md format
 

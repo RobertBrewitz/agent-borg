@@ -17,14 +17,11 @@ An autonomous AI agent for tasks derived from the Ralph.
 
 ### Setup
 
-Copy all files inside of the agent folder into the **root** of your project directory.
+Copy all files inside of the `agent` folder into the **root** of your project directory.
 
-### Update CLAUDE.md
+### Update AGENTS.md
 
-Edit the `CLAUDE.md` file to reflect your project.
-
-- Replace `WORK_SUMMARY` with a brief summary of the work to be done.
-- Replace `PROJECT_OVERVIEW` with an overview of the project.
+Add any important architectural or project specific information to the top of `AGENTS.md` for the agent(s) to read.
 
 ### Add tasks
 
