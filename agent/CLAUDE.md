@@ -18,22 +18,25 @@ You are an autonomous coding agent working on a software project.
 5. Check if there are any tasks left to do in the TODO.md, if not, reply with `<promise>COMPLETE</promise>` and end your response.
 6. Pick a task that is open `- [ ]`.
 7. Implement the single task.
-8. Run quality checks, cargo check, cargo fmt, cargo test.
-   a. If quality checks fail, try 3 times to fix the issues or mark the task as blocked `- [^]`
-   b. If quality checks pass, update the task in `TODO.md` to `- [x]`.
-9. Append your progress to `PROGRESS.md`.
-10. Append any new TODO tasks to `BACKLOG.md`.
-11. Append any important patterns or gotchas discovered to `AGENTS.md`.
-12. Commit all changes with the message `<todo text>`
-13. Return to step 5.
+8. Run quality checks, cargo fmt, cargo check, cargo test.
+9. Mark the task Done `- [x]` or Failed `- [^]` in `TODO.md` based on the criteria below.
+10. Append your progress to `PROGRESS.md`.
+11. Append any new TODO tasks to `BACKLOG.md`.
+12. Append any important patterns or gotchas discovered to `AGENTS.md`.
+13. Commit all changes with the message `<todo text>`
+14. Return to step 5.
 
-## When to Mark as Blocked `- [^]`
+## When to Mark as Failed `- [^]`
 
 - Task requires significant architectural changes needing human review
 - Task requires changes to crates/repos outside this workspace
 - Task requires external API changes or new dependencies not yet approved
 - Task is fundamentally ambiguous and needs human clarification
 - Task cannot be completed within 3 attempts due to quality check failures
+
+## When to Mark as Done `- [x]`
+
+- Task is fully implemented
 
 ## TODO.md format
 
