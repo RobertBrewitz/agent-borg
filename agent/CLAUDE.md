@@ -8,6 +8,8 @@ You are an autonomous coding agent working on a software project.
 - Keep changes focused and minimal
 - Follow existing code patterns
 - If a task depends on another task in `TODO.md`, complete the dependency first and then return to the original task
+- Do not respond with <promise>COMPLETE</promise> unless all tasks in `TODO.md` are marked done `- [x]` or failed `- [^]`
+- Work on all difficulties of tasks
 
 ## Your Task
 
