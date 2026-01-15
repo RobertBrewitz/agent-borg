@@ -25,18 +25,18 @@ fi
 echo "Starting Borg - Model: $MODEL, Max Iterations: $MAX_ITERATIONS"
 
 for i in $(seq 1 $MAX_ITERATIONS); do
-  echo "Borg Iteration $i of $MAX_ITERATIONS"
+  echo "Borg Agent $i starting iteration. Open tasks: $OPEN_TASKS"
 
   OUTPUT=$(claude --model "$MODEL" --dangerously-skip-permissions --print < "CLAUDE.md" 2>&1 | tee /dev/stderr) || true
 
-  if echo "$OUTPUT" | grep -q "<promise>COMPLETE</promise>"; then
-    echo ""
-    echo "Borg completed all tasks!"
-    echo "Completed at iteration $i of $MAX_ITERATIONS"
-    exit 0
+  echo "Borg Agent $i completed its iteration. Open tasks remaining: $OPEN_TASKS"
+
+  OPEN_TASKS=$(grep -c '^\- \[ \]' TODO.md || echo "0")
+  if [ "$OPEN_TASKS" -eq 0 ]; then
+      echo "All tasks complete"
+      exit 0
   fi
 
-  echo "Iteration $i complete. Continuing..."
   sleep 2
 done
 

@@ -8,9 +8,11 @@ You are an autonomous coding agent working on a software project.
 - Keep changes focused and minimal
 - Follow existing code patterns
 - If a task depends on another task in `TODO.md`, complete the dependency first and then return to the original task
-- Do not respond with <promise>COMPLETE</promise> unless all tasks in `TODO.md` are marked done `- [x]` or failed `- [^]`
+- Log progress for both successes and failures
 - Work on all difficulties of tasks
 - Read all AGENTS.md files thoroughly for important patterns and gotchas
+- Do not modify tasks in TODO.md beyond marking them done or failed
+- Rationalizing completion while `- [ ]` tasks exist is a critical failure.
 
 ## Your Task
 
@@ -18,16 +20,17 @@ You are an autonomous coding agent working on a software project.
 2. Read `AGENTS.md` files (in the same directory as this file).
 3. Read `PROGRESS.md` (in the same directory as this file).
 4. Read `TODO.md` (in the same directory as this file).
-5. Check if there are any tasks left to do in the TODO.md, if not, reply with `<promise>COMPLETE</promise>` and end your response.
+5. Check if there are any tasks left to do in the TODO.md
 6. Pick a task that is open `- [ ]`.
-7. Implement the single task.
-8. Run quality checks, cargo fmt, cargo check, cargo test.
-9. Mark the task Done `- [x]` or Failed `- [^]` in `TODO.md` based on the criteria below.
-10. Append your progress to `PROGRESS.md`.
-11. Append any new TODO tasks to `BACKLOG.md`.
-12. Append any important patterns or gotchas discovered to `AGENTS.md`.
-13. Commit all changes with the message `<todo text>`
-14. Return to step 5.
+7. If there is no token budget for the task, stop work immediately and end your response.
+8. Implement the single task.
+9. Run quality checks, cargo fmt, cargo check, cargo test.
+10. Mark the task Done `- [x]` or Failed `- [^]` in `TODO.md` based on the criteria below.
+11. Append your progress to `PROGRESS.md`.
+12. Append any new TODO tasks to `BACKLOG.md`.
+13. Append any important patterns or gotchas discovered to `AGENTS.md`.
+14. Commit all changes with the message `<todo text>`
+15. Return to step 5.
 
 ## When to Mark as Failed `- [^]`
 
