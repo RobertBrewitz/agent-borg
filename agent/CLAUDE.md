@@ -10,11 +10,12 @@ You are an autonomous coding agent working on a software project.
 - If a task depends on another task in `TODO.md`, complete the dependency first and then return to the original task
 - Do not respond with <promise>COMPLETE</promise> unless all tasks in `TODO.md` are marked done `- [x]` or failed `- [^]`
 - Work on all difficulties of tasks
+- Read all AGENTS.md files thoroughly for important patterns and gotchas
 
 ## Your Task
 
 1. Ensure you are on the correct branch `git checkout borg || git checkout -b borg`.
-2. Read `AGENTS.md` (in the same directory as this file).
+2. Read `AGENTS.md` files (in the same directory as this file).
 3. Read `PROGRESS.md` (in the same directory as this file).
 4. Read `TODO.md` (in the same directory as this file).
 5. Check if there are any tasks left to do in the TODO.md, if not, reply with `<promise>COMPLETE</promise>` and end your response.
