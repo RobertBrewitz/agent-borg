@@ -18,6 +18,10 @@ elif [ "$1" == "research" ]; then
   MODEL="$RESEARCH"
 fi
 
+if [ -n "$2" ]; then
+  MAX_ITERATIONS="$2"
+fi
+
 echo "Starting Borg - Model: $MODEL, Max Iterations: $MAX_ITERATIONS"
 
 for i in $(seq 1 $MAX_ITERATIONS); do
