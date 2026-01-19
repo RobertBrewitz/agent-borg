@@ -50,6 +50,7 @@ You are an autonomous coding agent working on a software project.
 - [ ] <todo text> (<difficulty>)
 
       <detailed description of the task>
+
 ```
 
 ## PROGRESS.md append format
@@ -59,7 +60,7 @@ Get git commit hash with: `git rev-parse --short HEAD`
 ```text
 ## <git short commit hash> - <todo text>
 
-<List of learnings, e.g. key changes, patterns, gotchas and/or new todos discovered, etc.>
+<brief and short description of what was done>
 
 ```
 
@@ -69,6 +70,7 @@ Get git commit hash with: `git rev-parse --short HEAD`
 - [ ] <short todo text> (<difficulty>)
 
       <detailed description of the task>
+
 ```
 
 ## AGENTS.md append format
@@ -76,5 +78,6 @@ Get git commit hash with: `git rev-parse --short HEAD`
 ```text
 ## <Section Title>
 
-<Description of the pattern, gotcha, or important information>
+<description of the pattern, gotcha, or important information>
+
 ```
