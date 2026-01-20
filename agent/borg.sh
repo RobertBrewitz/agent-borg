@@ -1,14 +1,15 @@
 #!/bin/bash
 # Borg - Long-running AI agent loop
-# Usage: ./borg.sh [model=code|creative|research] [max_iterations=10]
+# Usage: ./borg.sh [model=code|creative|refactor|research] [max_iterations=10]
 
 set -e
 
 # Default arguments
 MAX_ITERATIONS=10
 CODE="claude-sonnet-4-5"
-CREATIVE="claude-opus-4-5"
-RESEARCH="claude-haiku-4-5"
+CREATIVE="claude-opus-4-1"
+REFACTOR="claude-opus-4.5"
+RESEARCH="claude-sonnet-4-5"
 
 # load arguments from command line
 MODEL="$CODE"
@@ -16,6 +17,8 @@ if [ "$1" == "creative" ]; then
   MODEL="$CREATIVE"
 elif [ "$1" == "research" ]; then
   MODEL="$RESEARCH"
+elif [ "$1" == "refactor" ]; then
+  MODEL="$REFACTOR"
 fi
 
 if [ -n "$2" ]; then
