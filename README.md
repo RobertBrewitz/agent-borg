@@ -2,6 +2,12 @@
 
 An autonomous AI agent for tasks derived from the Ralph.
 
+## **Important**
+
+This is very new to me, I am still experimenting.
+
+**Use at your own risk.**
+
 ## Overview
 
 - Kanban style markdown files
@@ -12,6 +18,24 @@ An autonomous AI agent for tasks derived from the Ralph.
 - The agent documents important information in `AGENTS.md` for future iterations.
 - You can move tasks to `DONE.md` once verified by you.
 - See `CLAUDE.md` for detailed agent instructions.
+
+## Notes
+
+### Worktree
+
+I **strongly** recommend working in a worktree enabled git repository to be able to work at the same time as the agent.
+
+A worktree repository is a git repository that allows multiple branches to be checked out at the same time in different directories.
+
+So when the agent finishes a task, you can immediately cherry-pick and verify in another branch; Or focus on harder problems while the agent works on easier tasks.
+
+### Cherry-picking and verification
+
+I cherry-pick commits in order to verify each task is done correctly and perhaps add my own changes.
+
+### Failed tasks
+
+I might implement failed tasks myself, re-elaborate in `TODO.md` or add them to `BACKLOG.md` for future elaboration.
 
 ## Usage
 
@@ -40,11 +64,6 @@ Run the script with optional parameters for model type and maximum iterations:
 ```bash
 ./borg.sh [model=code|creative|research] [max_iterations=10]
 ```
-
-## Notes
-
-- I cherry-pick commits in order to verify each task is done correctly and perhaps add my own changes.
-- I might elaborate on failed tasks and add them back to `TODO.md` or `BACKLOG.md` for further elaboration.
 
 ## License
 
