@@ -28,12 +28,12 @@ fi
 echo "Starting Borg - Model: $MODEL, Max Iterations: $MAX_ITERATIONS"
 
 for i in $(seq 1 $MAX_ITERATIONS); do
-  OPEN_TASKS=$(grep -c '^\- \[ \]' TODO.md || echo "0" > /dev/null)
+  OPEN_TASKS=$(grep -c '^- \[ \]' TODO.md || echo "0" > /dev/null)
   echo "Borg Agent $i starting iteration. Open tasks: $OPEN_TASKS"
 
   OUTPUT=$(claude --model "$MODEL" --dangerously-skip-permissions --print < "CLAUDE.md" 2>&1 | tee /dev/stderr) || true
 
-  OPEN_TASKS=$(grep -c '^\- \[ \]' TODO.md || echo "0" > /dev/null)
+  OPEN_TASKS=$(grep -c '^- \[ \]' TODO.md || echo "0" > /dev/null)
   echo "Borg Agent $i completed its iteration. Open tasks remaining: $OPEN_TASKS"
 
   OPEN_TASKS_INTEGER=$(echo "$OPEN_TASKS" | tr -d '\n' | tr -d '\r')
