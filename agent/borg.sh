@@ -27,11 +27,55 @@ fi
 
 echo "Starting Borg - Model: $MODEL, Max Iterations: $MAX_ITERATIONS"
 
+# Function to run claude with retry logic for transient errors
+run_claude_with_retry() {
+  local max_retries=3
+  local retry_delay=5
+  local attempt=1
+
+  while [ $attempt -le $max_retries ]; do
+    set +e  # Temporarily allow errors
+    OUTPUT=$(claude --model "$MODEL" --dangerously-skip-permissions --print < "CLAUDE.md" 2>&1 | tee /dev/stderr)
+    EXIT_CODE=$?
+    set -e
+
+    # Check for known transient error patterns
+    if echo "$OUTPUT" | grep -q "No messages returned"; then
+      echo "Warning: Claude returned no messages (attempt $attempt/$max_retries)"
+    elif echo "$OUTPUT" | grep -q "rate limit\|Rate limit\|429"; then
+      echo "Warning: Rate limited (attempt $attempt/$max_retries)"
+    elif echo "$OUTPUT" | grep -q "overloaded\|503\|529"; then
+      echo "Warning: API overloaded (attempt $attempt/$max_retries)"
+    elif echo "$OUTPUT" | grep -q "timeout\|Timeout\|ETIMEDOUT"; then
+      echo "Warning: Request timeout (attempt $attempt/$max_retries)"
+    elif [ $EXIT_CODE -ne 0 ] && [ -z "$OUTPUT" ]; then
+      echo "Warning: Claude exited with code $EXIT_CODE and no output (attempt $attempt/$max_retries)"
+    else
+      # Success or non-retryable error
+      return 0
+    fi
+
+    if [ $attempt -lt $max_retries ]; then
+      echo "Retrying in ${retry_delay}s..."
+      sleep $retry_delay
+      retry_delay=$((retry_delay * 2))  # Exponential backoff
+    fi
+    attempt=$((attempt + 1))
+  done
+
+  echo "Error: Failed after $max_retries attempts"
+  return 1
+}
+
 for i in $(seq 1 $MAX_ITERATIONS); do
   OPEN_TASKS=$(grep -c '^- \[ \]' TODO.md || echo "0" > /dev/null)
   echo "Borg Agent $i starting iteration. Open tasks: $OPEN_TASKS"
 
-  OUTPUT=$(claude --model "$MODEL" --dangerously-skip-permissions --print < "CLAUDE.md" 2>&1 | tee /dev/stderr) || true
+  if ! run_claude_with_retry; then
+    echo "Borg Agent $i failed due to persistent Claude errors. Continuing to next iteration..."
+    sleep 10  # Longer pause after failure
+    continue
+  fi
 
   OPEN_TASKS=$(grep -c '^- \[ \]' TODO.md || echo "0" > /dev/null)
   echo "Borg Agent $i completed its iteration. Open tasks remaining: $OPEN_TASKS"
