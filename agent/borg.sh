@@ -1,42 +1,89 @@
 #!/bin/bash
-# Borg - Long-running AI agent loop
-# Usage: ./borg.sh [model=code|creative|refactor|research] [max_iterations=10]
+# Borg - Run an agent loop on a single plan
+# Usage: ./borg.sh <branch> <path-to-plan>
+#
+# The agent loops until the plan is done or blocked, handling context-window
+# limits by re-invoking Claude, which resumes from the progress file.
 
 set -e
 
-# Default arguments
+MODEL="claude-opus-4-6"
 MAX_ITERATIONS=10
-CODE="claude-sonnet-4-5"
-CREATIVE="claude-opus-4-1"
-REFACTOR="claude-opus-4.5"
-RESEARCH="claude-sonnet-4-5"
 
-# load arguments from command line
-MODEL="$CODE"
-if [ "$1" == "creative" ]; then
-  MODEL="$CREATIVE"
-elif [ "$1" == "research" ]; then
-  MODEL="$RESEARCH"
-elif [ "$1" == "refactor" ]; then
-  MODEL="$REFACTOR"
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: ./borg.sh <branch> <path-to-plan>"
+  echo "  e.g. ./borg.sh feature-auth plans/todo/2026-02-07-feature.md"
+  exit 1
 fi
 
-if [ -n "$2" ]; then
-  MAX_ITERATIONS="$2"
+BRANCH="$1"
+PLAN_PATH="$(realpath "$2")"
+PLAN="$(basename "$PLAN_PATH")"
+
+if [ ! -f "$PLAN_PATH" ]; then
+  echo "Error: Plan not found at '$2'"
+  exit 1
 fi
 
-echo "Starting Borg - Model: $MODEL, Max Iterations: $MAX_ITERATIONS"
+# Resolve project root for worktree layout
+# For bare repos, git-common-dir IS the project root; for normal repos it's .git/
+GIT_COMMON="$(cd "$(git rev-parse --git-common-dir)" && pwd)"
+if [ "$(git rev-parse --is-bare-repository)" = "true" ]; then
+  PROJECT_ROOT="$GIT_COMMON"
+else
+  PROJECT_ROOT="$(dirname "$GIT_COMMON")"
+fi
+PLANS_DIR="$PROJECT_ROOT/plans"
+WORKTREE_DIR="$PROJECT_ROOT/$BRANCH"
+
+# Determine current status from the path
+PLAN_DIR="$(dirname "$PLAN_PATH")"
+PLAN_STATUS="$(basename "$PLAN_DIR")"
+
+if [[ "$PLAN_STATUS" != "todo" && "$PLAN_STATUS" != "in-progress" ]]; then
+  echo "Error: Plan must be in todo/ or in-progress/, found in $PLAN_STATUS/"
+  exit 1
+fi
+
+# Set up worktree: reuse existing or create new
+if [ -d "$WORKTREE_DIR" ]; then
+  echo "Using existing worktree: $WORKTREE_DIR"
+else
+  echo "Creating worktree '$BRANCH' at $WORKTREE_DIR"
+  git worktree add "$WORKTREE_DIR" -b "$BRANCH" 2>/dev/null \
+    || git worktree add "$WORKTREE_DIR" "$BRANCH"
+fi
+
+cd "$WORKTREE_DIR"
+
+# Resolve the agent directory (where this script and CLAUDE.md live)
+AGENT_DIR="$(cd "$(dirname "$0")" && pwd)"
+AGENT_INSTRUCTIONS="$AGENT_DIR/CLAUDE.md"
+
+if [ ! -f "$AGENT_INSTRUCTIONS" ]; then
+  echo "Error: CLAUDE.md not found at $AGENT_INSTRUCTIONS"
+  exit 1
+fi
+
+echo "Starting Borg - Plan: $PLAN ($PLAN_STATUS)"
+echo "Project root: $PROJECT_ROOT"
+echo "Worktree: $WORKTREE_DIR (branch: $BRANCH)"
 
 # Function to run claude with retry logic for transient errors
 run_claude_with_retry() {
   local max_retries=3
   local retry_delay=5
   local attempt=1
+  local outfile="/tmp/borg_claude_output_$$"
 
   while [ $attempt -le $max_retries ]; do
     set +e  # Temporarily allow errors
-    OUTPUT=$(claude --model "$MODEL" --dangerously-skip-permissions --print < "CLAUDE.md" 2>&1 | tee /dev/stderr)
-    EXIT_CODE=$?
+    claude --model "$MODEL" --dangerously-skip-permissions --verbose --print \
+      --append-system-prompt "$(cat "$AGENT_INSTRUCTIONS")" \
+      -p "Execute plan: $PLAN_PATH — Worktree: $WORKTREE_DIR" 2>&1 | tee "$outfile"
+    EXIT_CODE=${PIPESTATUS[0]}
+    OUTPUT=$(cat "$outfile")
+    rm -f "$outfile"
     set -e
 
     # Check for known transient error patterns
@@ -67,22 +114,26 @@ run_claude_with_retry() {
   return 1
 }
 
+plan_is_active() {
+  [ -f "$PLANS_DIR/in-progress/$PLAN" ] || [ -f "$PLANS_DIR/todo/$PLAN" ]
+}
+
 for i in $(seq 1 $MAX_ITERATIONS); do
-  OPEN_TASKS=$(grep -c '^- \[ \]' TODO.md || echo "0" > /dev/null)
-  echo "Borg Agent $i starting iteration. Open tasks: $OPEN_TASKS"
+  if ! plan_is_active; then
+    echo "Plan '$PLAN' is no longer in todo/ or in-progress/. Done!"
+    exit 0
+  fi
+
+  echo "--- Iteration $i ---"
 
   if ! run_claude_with_retry; then
-    echo "Borg Agent $i failed due to persistent Claude errors. Continuing to next iteration..."
-    sleep 10  # Longer pause after failure
+    echo "Iteration $i failed due to persistent Claude errors. Continuing..."
+    sleep 10
     continue
   fi
 
-  OPEN_TASKS=$(grep -c '^- \[ \]' TODO.md || echo "0" > /dev/null)
-  echo "Borg Agent $i completed its iteration. Open tasks remaining: $OPEN_TASKS"
-
-  OPEN_TASKS_INTEGER=$(echo "$OPEN_TASKS" | tr -d '\n' | tr -d '\r')
-  if [ "$OPEN_TASKS_INTEGER" -eq 0 ]; then
-    echo "Borg has completed all tasks in $i iterations!"
+  if ! plan_is_active; then
+    echo "Plan '$PLAN' completed in $i iterations!"
     exit 0
   fi
 
@@ -90,6 +141,6 @@ for i in $(seq 1 $MAX_ITERATIONS); do
 done
 
 echo ""
-echo "Borg reached max iterations ($MAX_ITERATIONS) without completing all tasks."
-echo "Check PROGRESS.md for status."
+echo "Reached max iterations ($MAX_ITERATIONS) without completing plan '$PLAN'."
+echo "Check plans/progress/$PLAN for status."
 exit 1
