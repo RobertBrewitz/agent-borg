@@ -50,15 +50,18 @@ You are working inside a **git worktree**. The project uses a bare repository la
 
 1. Read `AGENTS.md` for patterns/gotchas.
 2. Resolve the project root and plans directory (see Worktree Environment above).
-3. **Find your plan:** The plan filename is provided as a prompt (e.g. `Execute plan: 2026-02-05-feature.md`).
-   - If a progress file exists at `$PROJECT_ROOT/plans/progress/<plan-filename>`, resume at the indicated step.
+3. **Find your plan:** The plan name is provided as a prompt (e.g. `Execute plan: add-feature`).
+   - The plan is either a file (`add-feature.md`) or a folder (`add-feature/`).
+   - If a progress file exists at `$PROJECT_ROOT/plans/progress/<plan-name>.md`, resume at the indicated step/stage.
    - Otherwise, this is a fresh start — the plan should be in `todo/` or `in-progress/`.
 4. **Verify your worktree:** `borg.sh` has already created (or reused) a worktree and placed you inside it. Confirm with `pwd` — you should be in `$PROJECT_ROOT/<branch>/`. Do NOT create another worktree.
 5. **Move the plan to in-progress:**
    ```bash
-   mv "$PROJECT_ROOT/plans/todo/<plan-file>" "$PROJECT_ROOT/plans/in-progress/"
+   mv "$PROJECT_ROOT/plans/todo/<plan-name>.md" "$PROJECT_ROOT/plans/in-progress/"
+   # or for folder plans:
+   mv "$PROJECT_ROOT/plans/todo/<plan-name>/" "$PROJECT_ROOT/plans/in-progress/"
    ```
-6. **Create a progress file:** Write `$PROJECT_ROOT/plans/progress/<plan-filename>` (same filename as the plan). This is your isolated progress file — no other agent will touch it (see Append Formats).
+6. **Create a progress file:** Write `$PROJECT_ROOT/plans/progress/<plan-name>.md`. This is your isolated progress file — no other agent will touch it (see Append Formats).
 7. Execute the plan one step at a time:
    - Follow the step exactly.
    - Run `cargo fmt && cargo check && cargo test` after each step.
@@ -70,7 +73,7 @@ You are working inside a **git worktree**. The project uses a bare repository la
 
 ## Handover
 
-Before running out of context or ending a session, update your progress file (`$PROJECT_ROOT/plans/progress/<plan-filename>`) with:
+Before running out of context or ending a session, update your progress file (`$PROJECT_ROOT/plans/progress/<plan-name>.md`) with:
 
 - Last completed step
 - Next step to execute
@@ -78,15 +81,25 @@ Before running out of context or ending a session, update your progress file (`$
 
 The next agent scans `plans/progress/` on startup and can resume any plan that has a progress file but no active agent.
 
+## Plan Formats
+
+A plan is identified by its **name** (e.g. `add-feature`). It can be either:
+
+- **Single file:** `add-feature.md` — one markdown file with all tasks.
+- **Folder:** `add-feature/` — a directory containing numbered stage files (`01-setup.md`, `02-core.md`, etc.). Execute stages in order.
+
+Both formats move as a unit between lifecycle directories. Use `mv` on the file or folder.
+
 ## Plan Execution
 
-Plans are dated markdown files in `$PROJECT_ROOT/plans/todo/` (e.g. `2026-02-05-feature.md`).
+Plans live in `$PROJECT_ROOT/plans/todo/` (e.g. `add-feature.md` or `add-feature/`).
 
 - Execute tasks in order, follow steps exactly.
+- For folder plans, execute stages in numeric order. Complete all tasks in a stage before moving to the next.
 - Run `cargo fmt && cargo check && cargo test` after each task.
 - Commit after each task.
 - If a task fails after 3 attempts, move plan to `$PROJECT_ROOT/plans/blocked/` and note reason in the progress file.
-- When all tasks complete, move plan to `$PROJECT_ROOT/plans/done/`.
+- When all tasks (all stages) complete, move plan to `$PROJECT_ROOT/plans/done/`.
 
 ## Plan Lifecycle
 
@@ -99,21 +112,22 @@ draft/  →  todo/  →  in-progress/  →  done/
 - **draft/** — Plan is being written or revised.
 - **todo/** — Plan is verified and ready for execution.
 - **in-progress/** — Plan is actively being worked on (a worktree exists for it).
-- **progress/** — Per-plan progress files (same filename as the plan). Exists while the plan is in-progress; deleted when done.
+- **progress/** — Per-plan progress files (`<plan-name>.md`). Exists while the plan is in-progress; deleted when done.
 - **done/** — All steps completed successfully.
 - **blocked/** — A step failed after 3 attempts.
-- **review/** — Verification reports (one per plan, same filename).
+- **review/** — Verification reports (one per plan, `<plan-name>.md`).
 
 ## Append Formats
 
-**Progress file** (`plans/progress/<plan-filename>`):
+**Progress file** (`plans/progress/<plan-name>.md`):
 
-One file per active plan. Same filename as the plan (e.g. `2026-02-05-feature.md`). Each agent owns exactly one progress file — no shared files, no contention.
+One file per active plan. Named after the plan (e.g. `add-feature.md`). Each agent owns exactly one progress file — no shared files, no contention.
 
 ```
-# Progress: 2026-02-05-feature.md
+# Progress: add-feature
 
 - **Worktree:** `<project-root>/feature/`
+- **Stage:** 02-core.md (omit for single-file plans)
 - **Last completed step:** 3
 - **Next step:** 4
 - **Git hash:** abc1234

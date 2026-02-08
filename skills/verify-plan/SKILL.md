@@ -32,8 +32,8 @@ All plan paths below use `$PLANS_DIR` as the root.
 
 ## Invocation
 
-1. Accept plan path as argument, OR list `$PLANS_DIR/draft/` and `$PLANS_DIR/todo/` and ask which to verify. When listing, also check `$PLANS_DIR/review/` for existing reviews. Mark each plan as **new** (no review exists) or **reviewed** (review file exists). Show this status in the options so the user knows which plans have already been reviewed. Prefer surfacing unreviewed plans first.
-2. Read the full plan file. If a review already exists for this plan, read it too — compare against the current plan to note whether the plan has changed since the last review (e.g. different line count, modified timestamp). If unchanged, ask the user whether to re-verify or skip.
+1. Accept plan path as argument, OR list `$PLANS_DIR/draft/` and `$PLANS_DIR/todo/` and ask which to verify. List both `.md` files and subdirectories (folder plans). When listing, also check `$PLANS_DIR/review/` for existing reviews (`<plan-name>.md`). Mark each plan as **new** (no review exists) or **reviewed** (review file exists). Show this status in the options so the user knows which plans have already been reviewed. Prefer surfacing unreviewed plans first.
+2. Read the full plan file (for folder plans, read all stage files in numeric order). If a review already exists for this plan, read it too — compare against the current plan to note whether the plan has changed since the last review (e.g. different line count, modified timestamp). If unchanged, ask the user whether to re-verify or skip.
 3. Collect all `@skill-name` references from the plan. Skills live in `~/.claude/skills/` (global) and `./.claude/skills/` (project-local) — no other search paths exist. For each, read the skill's `SKILL.md` to understand what the skill provides. This context informs both passes — structural review can verify skills are referenced correctly, and feasibility review can check that the plan uses skill APIs/patterns that actually exist.
 4. Run Pass 1 (structural), then Pass 2 (feasibility)
 5. If Pass 2 encounters references not covered by any loaded skill, **read source code, Grep, or Glob** to verify them directly. Only mark UNVERIFIABLE if you can't confirm via skills OR code.
@@ -94,7 +94,10 @@ For each item, assign PASS, BLOCKER, WARN, or UNVERIFIABLE.
 
 ## Output Format
 
-Print the report to the conversation AND save it to `$PLANS_DIR/review/<plan-filename>` (e.g. if the plan is `2026-02-06-feature.md`, save the review to `$PLANS_DIR/review/2026-02-06-feature.md`). Create the `review/` directory if it doesn't exist.
+Print the report to the conversation AND save it to `$PLANS_DIR/review/`. Create the `review/` directory if it doesn't exist.
+
+- **Single-file plan:** Save to `$PLANS_DIR/review/<plan-name>.md`.
+- **Folder plan:** Create `$PLANS_DIR/review/<plan-name>/` with one review file per stage (e.g. `$PLANS_DIR/review/add-feature/01-setup.md`, `$PLANS_DIR/review/add-feature/02-core.md`). Each stage gets its own structural + feasibility review. Print a combined summary across all stages at the end.
 
 ```
 ## Plan Verification: <filename>

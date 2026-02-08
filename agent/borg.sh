@@ -12,7 +12,8 @@ MAX_ITERATIONS=10
 
 if [ -z "$1" ] || [ -z "$2" ]; then
   echo "Usage: ./borg.sh <branch> <path-to-plan>"
-  echo "  e.g. ./borg.sh feature-auth plans/todo/2026-02-07-feature.md"
+  echo "  e.g. ./borg.sh feature-auth plans/todo/add-feature.md"
+  echo "       ./borg.sh feature-auth plans/todo/add-feature/"
   exit 1
 fi
 
@@ -20,7 +21,7 @@ BRANCH="$1"
 PLAN_PATH="$(realpath "$2")"
 PLAN="$(basename "$PLAN_PATH")"
 
-if [ ! -f "$PLAN_PATH" ]; then
+if [ ! -f "$PLAN_PATH" ] && [ ! -d "$PLAN_PATH" ]; then
   echo "Error: Plan not found at '$2'"
   exit 1
 fi
@@ -54,9 +55,8 @@ else
     || git worktree add "$WORKTREE_DIR" "$BRANCH"
 fi
 
-cd "$WORKTREE_DIR"
-
 # Resolve the agent directory (where this script and CLAUDE.md live)
+# Must happen BEFORE cd into worktree, since $0 may be a relative path
 AGENT_DIR="$(cd "$(dirname "$0")" && pwd)"
 AGENT_INSTRUCTIONS="$AGENT_DIR/CLAUDE.md"
 
@@ -64,6 +64,8 @@ if [ ! -f "$AGENT_INSTRUCTIONS" ]; then
   echo "Error: CLAUDE.md not found at $AGENT_INSTRUCTIONS"
   exit 1
 fi
+
+cd "$WORKTREE_DIR"
 
 echo "Starting Borg - Plan: $PLAN ($PLAN_STATUS)"
 echo "Project root: $PROJECT_ROOT"
@@ -115,7 +117,7 @@ run_claude_with_retry() {
 }
 
 plan_is_active() {
-  [ -f "$PLANS_DIR/in-progress/$PLAN" ] || [ -f "$PLANS_DIR/todo/$PLAN" ]
+  [ -e "$PLANS_DIR/in-progress/$PLAN" ] || [ -e "$PLANS_DIR/todo/$PLAN" ]
 }
 
 for i in $(seq 1 $MAX_ITERATIONS); do

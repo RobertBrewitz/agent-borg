@@ -33,12 +33,14 @@ Before doing anything else, use `AskUserQuestion` to prompt:
 
 Then:
 
-- **If new:** Proceed to the sections below to write a fresh plan. Save to `$PLANS_DIR/draft/YYYY-MM-DD-<feature-name>.md`.
-- **If existing:** List all `.md` files in `$PLANS_DIR/draft/` and `$PLANS_DIR/todo/`. Use `AskUserQuestion` to prompt which plan to work on (list the filenames as options). Then read the chosen plan and check `$PLANS_DIR/review/` for a matching review file (same filename). If a review exists:
-  1. Read the review and collect all non-PASS items (BLOCKERs, WARNINGs, NOTEs).
+- **If new:** Ask: "Single file or multi-stage folder?" Options: "Single file" / "Multi-stage folder".
+  - **Single file:** Save to `$PLANS_DIR/draft/<feature-name>.md`.
+  - **Folder:** Create `$PLANS_DIR/draft/<feature-name>/` with numbered stage files (`01-setup.md`, `02-core.md`, etc.). Each stage is a self-contained plan with its own header and tasks. Group related tasks into stages by logical phase (setup, core logic, integration, polish, etc.).
+- **If existing:** List all `.md` files and subdirectories in `$PLANS_DIR/draft/` and `$PLANS_DIR/todo/`. Use `AskUserQuestion` to prompt which plan to work on (list the names as options). Then read the chosen plan (all stage files for folders) and check `$PLANS_DIR/review/` for a matching review (`<plan-name>.md` for single-file plans, `<plan-name>/` folder for multi-stage plans). If a review exists:
+  1. Read the review(s) and collect all non-PASS items (BLOCKERs, WARNINGs, NOTEs). For folder plans, read all per-stage review files.
   2. Group them by category. Use `AskUserQuestion` with `multiSelect: true` to prompt which categories to resolve (e.g. "Blockers (3 items)" / "Warnings (2 items)" / "Notes (1 item)").
   3. Revise the plan to address all items in the selected categories.
-  4. After revision, delete the review file — it is now stale.
+  4. After revision, delete the review file or folder — it is now stale.
 
   If no review exists, ask what changes are needed. Revise following all the conventions below.
 
@@ -177,7 +179,7 @@ Each entry should note the file/symbol looked up and which task needed it. This 
 
 ## Cleanup
 
-After saving the plan, check if a design document exists for this feature (e.g. `$PLANS_DIR/draft/YYYY-MM-DD-<topic>-design.md`). If one exists, delete it and commit the deletion — the plan is the source of truth now.
+After saving the plan, check if a design document exists for this feature (e.g. `$PLANS_DIR/draft/<topic>-design.md` or `$PLANS_DIR/draft/<topic>-design/`). If one exists, delete it and commit the deletion — the plan is the source of truth now.
 
 ## Remember
 
