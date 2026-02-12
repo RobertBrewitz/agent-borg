@@ -37,14 +37,16 @@ fi
 PLANS_DIR="$PROJECT_ROOT/plans"
 WORKTREE_DIR="$PROJECT_ROOT/$BRANCH"
 
-# Determine current status from the path
-PLAN_DIR="$(dirname "$PLAN_PATH")"
-PLAN_STATUS="$(basename "$PLAN_DIR")"
-
-if [[ "$PLAN_STATUS" != "todo" && "$PLAN_STATUS" != "in-progress" ]]; then
-  echo "Error: Plan must be in todo/ or in-progress/, found in $PLAN_STATUS/"
-  exit 1
-fi
+# Determine current status from the path (allow subfolders inside todo/ and in-progress/)
+PLAN_REL="${PLAN_PATH#"$PLANS_DIR/"}"
+case "$PLAN_REL" in
+  todo/*)        PLAN_STATUS="todo" ;;
+  in-progress/*) PLAN_STATUS="in-progress" ;;
+  *)
+    echo "Error: Plan must be under plans/todo/ or plans/in-progress/, got: $PLAN_REL"
+    exit 1
+    ;;
+esac
 
 # Set up worktree: reuse existing or create new
 if [ -d "$WORKTREE_DIR" ]; then
@@ -116,8 +118,11 @@ run_claude_with_retry() {
   return 1
 }
 
+# Relative path under the status directory (e.g. "subfolder/add-feature.md" or just "add-feature.md")
+PLAN_SUBPATH="${PLAN_REL#*/}"
+
 plan_is_active() {
-  [ -e "$PLANS_DIR/in-progress/$PLAN" ] || [ -e "$PLANS_DIR/todo/$PLAN" ]
+  [ -e "$PLANS_DIR/in-progress/$PLAN_SUBPATH" ] || [ -e "$PLANS_DIR/todo/$PLAN_SUBPATH" ]
 }
 
 for i in $(seq 1 $MAX_ITERATIONS); do

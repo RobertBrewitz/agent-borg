@@ -8,18 +8,13 @@ Skills are located at `~/.claude/skills/`. Each skill has a `SKILL.md` file.
 To read a skill, use the exact path: `~/.claude/skills/<skill-name>/SKILL.md`.
 Do NOT search or glob for skills — go directly to the path.
 
-## Rules
-
-- ONE plan per session. Do not rationalize completion while open plans exist.
-- Keep changes focused, minimal, and following existing code patterns.
-- Read `AGENTS.md` for important patterns and gotchas.
-- Multiple agents may run concurrently on different plans. Never touch another agent's worktree or plan.
-
 ## Exploration workflow
 
 Do NOT spend time on extensive codebase exploration before starting work unless explicitly asked. If the user gives you a clear task with file references, start working on it directly. Ask clarifying questions instead of exploring speculatively.
 
 ## Plan execution workflow
+
+Multiple agents may run concurrently on different plans. Never touch another agent's worktree or plan.
 
 1. Read `AGENTS.md` for patterns/gotchas.
 2. Resolve the project root and plans directory (see Worktree Environment above).
