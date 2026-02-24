@@ -183,7 +183,7 @@ Run both passes again on the rewritten plan. Print a new report. This loop repea
 
 After the final verdict, act on it:
 
-- **READY** — Move the plan from `draft/` to `todo/`. Commit the move. Run all git commands from `$PLANS_DIR` — it is its own git repo.
+- **READY** — Move the plan from `draft/` to `todo/`. Delete any review files for this plan (e.g. `$PLANS_DIR/review/<plan-name>-self-review.md`) — they're stale after verification rewrites. Commit the move and deletions. Run all git commands from `$PLANS_DIR` — it is its own git repo.
 - **NEEDS SKILLS** — Leave the plan in `draft/`. List the specific skills needed and ask the user to provide them before re-running verification.
 - **NOT READY after 2 rewrites** — Leave the plan in `draft/`. Show the remaining issues and ask the user for guidance.
 

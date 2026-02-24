@@ -194,7 +194,11 @@ Each entry should note the file/symbol looked up and which task needed it. This 
 
 ## Cleanup
 
-After saving the plan, check if a design document exists for this feature (e.g. `$PLANS_DIR/design/<topic>-design.md` or `$PLANS_DIR/design/<topic>-design/`). If one exists, delete it and commit the deletion. Run all git commands from `$PLANS_DIR` — it is its own git repo.
+After saving the plan:
+
+1. Check if a design document exists for this feature (e.g. `$PLANS_DIR/design/<topic>-design.md` or `$PLANS_DIR/design/<topic>-design/`). If one exists, delete it.
+2. Check if any review files exist for this plan (e.g. `$PLANS_DIR/review/<plan-name>-self-review.md`). If any exist, delete them — they're stale after a rewrite.
+3. Commit all deletions. Run all git commands from `$PLANS_DIR` — it is its own git repo.
 
 ## Remember
 
