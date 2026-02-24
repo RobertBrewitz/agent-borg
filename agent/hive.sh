@@ -1,26 +1,23 @@
 #!/bin/bash
-# Hive - Poll plans/todo/ and dispatch agents automatically
-# Usage: ./hive.sh [--poll-interval SECONDS] [--max-concurrent N]
+# Hive - Dispatch agents for all plans in todo/, report completion once per job
+# Usage: ./hive.sh [--max-concurrent N]
 #
-# Watches plans/todo/ for new plans. When one appears, derives a branch name,
-# spawns coder.sh in the background to execute it, and moves on.
+# Scans plans/todo/ once, dispatches agents for each plan (up to max-concurrent
+# at a time), waits for each to finish, and prints completion status.
 
 set -e
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
-POLL_INTERVAL=10      # seconds between scans
 MAX_CONCURRENT=3      # max parallel agents
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --poll-interval) POLL_INTERVAL="$2"; shift 2 ;;
     --max-concurrent) MAX_CONCURRENT="$2"; shift 2 ;;
     -h|--help)
-      echo "Usage: ./hive.sh [--poll-interval SECONDS] [--max-concurrent N]"
+      echo "Usage: ./hive.sh [--max-concurrent N]"
       echo ""
       echo "Options:"
-      echo "  --poll-interval  Seconds between todo/ scans (default: 10)"
       echo "  --max-concurrent Max parallel agents (default: 3)"
       exit 0 ;;
     *) echo "Unknown option: $1"; exit 1 ;;
@@ -28,7 +25,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ── Resolve paths ─────────────────────────────────────────────────────────────
-# For bare repos, git-common-dir IS the project root; for normal repos it's .git/
 GIT_COMMON="$(cd "$(git rev-parse --git-common-dir)" && pwd)"
 if [ "$(git rev-parse --is-bare-repository)" = "true" ]; then
   PROJECT_ROOT="$GIT_COMMON"
@@ -46,11 +42,9 @@ if [ ! -x "$CODER_SH" ]; then
 fi
 
 # ── Signal handling ───────────────────────────────────────────────────────────
-SHUTDOWN=false
 declare -A ACTIVE_PIDS  # pid -> plan-name
 
 cleanup() {
-  SHUTDOWN=true
   echo ""
   echo "Shutting down hive..."
   trap - INT TERM
@@ -70,34 +64,25 @@ trap cleanup INT TERM
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-# Strip extension/trailing slash from plan name
-# "add-feature.md" -> "add-feature"
-# "add-feature/"   -> "add-feature"
 plan_to_name() {
   local name="$1"
-  name="${name%.md}"       # strip .md
-  name="${name%/}"         # strip trailing slash
+  name="${name%.md}"
+  name="${name%/}"
   echo "$name"
 }
 
-# Read **Branch:** field from plan header.
-# For folder plans, reads the first stage file (numerically).
-# Falls back to plan name if no Branch field found.
 read_plan_branch() {
   local plan_path="$1"
   local plan_name="$2"
   local file
 
   if [ -d "$plan_path" ]; then
-    # Folder plan — read first stage file
     file="$(ls "$plan_path"/*.md 2>/dev/null | sort | head -n1)"
     [ -z "$file" ] && { echo "$plan_name"; return; }
   else
     file="$plan_path"
   fi
 
-  # Extract branch from **Branch:** line (first 20 lines of header)
-  # Strip backticks and whitespace — plans often format as `branch-name`
   local branch
   branch="$(head -20 "$file" | sed -n 's/^\*\*Branch:\*\* *//p' | tr -d '[:space:]`')"
 
@@ -108,83 +93,55 @@ read_plan_branch() {
   fi
 }
 
-# Count currently running agents (reap finished ones first)
-reap_and_count() {
-  local count=0
-  for pid in "${!ACTIVE_PIDS[@]}"; do
-    if kill -0 "$pid" 2>/dev/null; then
-      count=$((count + 1))
-    else
-      # Agent finished — reap it
-      wait "$pid" 2>/dev/null
-      local exit_code=$?
-      local plan_name="${ACTIVE_PIDS[$pid]}"
-      if [ "$exit_code" -eq 0 ]; then
-        echo "[$(date '+%H:%M:%S')] ✓ '$plan_name' done (exit $exit_code)" >&2
-      else
-        echo "[$(date '+%H:%M:%S')] ✗ '$plan_name' FAILED (exit $exit_code)" >&2
-      fi
-      unset "ACTIVE_PIDS[$pid]"
-    fi
-  done
-  echo "$count"
+# Wait for any one child to finish, report its status, return its pid
+wait_for_one() {
+  if ! wait -n -p FINISHED_PID 2>/dev/null; then
+    # wait -n -p not supported (bash < 5.1), fall back to polling
+    while true; do
+      for pid in "${!ACTIVE_PIDS[@]}"; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+          wait "$pid" 2>/dev/null
+          WAIT_EXIT=$?
+          FINISHED_PID="$pid"
+          return
+        fi
+      done
+      sleep 1
+    done
+  fi
+  WAIT_EXIT=$?
 }
 
-# Check if a plan is already being worked on
-plan_is_active() {
-  local plan_name="$1"
-  for pid in "${!ACTIVE_PIDS[@]}"; do
-    if [ "${ACTIVE_PIDS[$pid]}" = "$plan_name" ] && kill -0 "$pid" 2>/dev/null; then
-      return 0
-    fi
-  done
-  return 1
-}
+# ── Collect plans ────────────────────────────────────────────────────────────
+PLANS=()
+for plan_path in "$PLANS_DIR/todo/"*.md "$PLANS_DIR/todo/"*/; do
+  [ -e "$plan_path" ] || continue
+  PLANS+=("$plan_path")
+done
 
-# ── Main loop ─────────────────────────────────────────────────────────────────
-echo "╔══════════════════════════════════════════════╗"
-echo "║              Borg Hive                       ║"
-echo "╠══════════════════════════════════════════════╣"
-echo "║  Plans dir:     $PLANS_DIR"
-echo "║  Poll interval: ${POLL_INTERVAL}s"
-echo "║  Max concurrent: $MAX_CONCURRENT"
-echo "╚══════════════════════════════════════════════╝"
-echo ""
-echo "Watching plans/todo/ for new plans..."
+if [ ${#PLANS[@]} -eq 0 ]; then
+  echo "No plans in todo/."
+  exit 0
+fi
+
+echo "Hive: ${#PLANS[@]} plan(s) to dispatch (max $MAX_CONCURRENT concurrent)"
 echo ""
 
-while true; do
-  $SHUTDOWN && exit 0
+# ── Dispatch and wait ─────────────────────────────────────────────────────────
+active_count=0
+plan_idx=0
 
-  # Reap finished agents
-  active_count=$(reap_and_count)
+while [ "$plan_idx" -lt "${#PLANS[@]}" ] || [ "$active_count" -gt 0 ]; do
+  # Dispatch plans up to concurrency limit
+  while [ "$plan_idx" -lt "${#PLANS[@]}" ] && [ "$active_count" -lt "$MAX_CONCURRENT" ]; do
+    plan_path="${PLANS[$plan_idx]}"
+    plan_idx=$((plan_idx + 1))
 
-  # Scan for plans in todo/
-  for plan_path in "$PLANS_DIR/todo/"*.md "$PLANS_DIR/todo/"*/; do
-    $SHUTDOWN && exit 0
-
-    # Skip glob non-matches
-    [ -e "$plan_path" ] || continue
-
-    # Extract plan name
     plan_name="$(basename "$plan_path")"
     plan_name="$(plan_to_name "$plan_name")"
-
-    # Skip if already running
-    if plan_is_active "$plan_name"; then
-      continue
-    fi
-
-    # Check concurrency limit
-    if [ "$active_count" -ge "$MAX_CONCURRENT" ]; then
-      echo "[$(date '+%H:%M:%S')] At max concurrency ($MAX_CONCURRENT), waiting..."
-      break
-    fi
-
-    # Read branch from plan header, fall back to plan name
     branch="$(read_plan_branch "$plan_path" "$plan_name")"
 
-    echo "[$(date '+%H:%M:%S')] Dispatching '$plan_name' → branch '$branch'"
+    echo "[$(date '+%H:%M:%S')] Dispatching '$plan_name' -> branch '$branch'"
 
     setsid "$CODER_SH" "$branch" "$plan_path" > /dev/null 2>&1 &
     agent_pid=$!
@@ -192,7 +149,24 @@ while true; do
     active_count=$((active_count + 1))
   done
 
-  # Sleep between polls
-  sleep "$POLL_INTERVAL" &
-  wait $! 2>/dev/null || true
+  # Wait for next agent to finish
+  if [ "$active_count" -gt 0 ]; then
+    FINISHED_PID=""
+    WAIT_EXIT=0
+    wait_for_one
+
+    if [ -n "$FINISHED_PID" ] && [ -n "${ACTIVE_PIDS[$FINISHED_PID]+x}" ]; then
+      plan_name="${ACTIVE_PIDS[$FINISHED_PID]}"
+      if [ "$WAIT_EXIT" -eq 0 ]; then
+        echo "[$(date '+%H:%M:%S')] done '$plan_name'"
+      else
+        echo "[$(date '+%H:%M:%S')] FAILED '$plan_name' (exit $WAIT_EXIT)"
+      fi
+      unset "ACTIVE_PIDS[$FINISHED_PID]"
+      active_count=$((active_count - 1))
+    fi
+  fi
 done
+
+echo ""
+echo "All plans dispatched and completed."
