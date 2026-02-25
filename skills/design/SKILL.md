@@ -41,13 +41,14 @@ Start by understanding the current project context, then ask questions one at a 
 
 ## Working from the Backlog
 
-The project backlog lives at `BACKLOG.md` in the project root. When a design session starts from a backlog task:
+The project backlog lives at `plans/backlog/` — one markdown file per task. When starting a design session:
 
-1. Read `BACKLOG.md` to understand the task context
-2. Use the backlog entry as the seed for the design conversation
-3. The user may combine multiple backlog tasks into a single plan
+1. List files in `$PLANS_DIR/backlog/` and present them to the user
+2. Ask if any backlog items should feed into this design (or "None — new idea")
+3. Read the selected backlog files to understand the task context
+4. The user may combine multiple backlog tasks into a single design/plan
 
-Keep track of which backlog tasks fed into the design. The resulting plan should include a task that updates `BACKLOG.md` in the feature branch (removing completed items, adding any newly discovered work).
+Keep track of which backlog files fed into the design. The resulting plan should include a task that deletes the consumed backlog files from `plans/backlog/` (committed in the plans repo).
 
 ## After the Design
 

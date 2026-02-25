@@ -124,15 +124,15 @@ Expected: PASS
 Run: `git add src/path/file.rs && git commit -m "feat: add specific feature"`
 ````
 
-## Backlog Updates
+## Backlog Cleanup
 
-If any tasks from `BACKLOG.md` (in the project root) were used as input for this plan (directly or via a design session), include a task in the plan that updates `BACKLOG.md` in the feature branch:
+If any backlog files from `plans/backlog/` were used as input for this plan (directly or via a design session), include a task in the plan that deletes the consumed backlog files:
 
-1. Remove the completed entries from `BACKLOG.md`
-2. Any new out-of-scope work discovered during design should be added as new entries
-3. Commit the change in the feature branch
+1. Delete the consumed files from `$PLANS_DIR/backlog/`
+2. Any new out-of-scope work discovered during planning should be created as new backlog files (see CLAUDE.md Backlog Items format)
+3. Commit in the plans repo (`$PLANS_DIR`)
 
-This task should typically be the last task in the plan. It keeps the backlog current without touching main.
+This task should typically be the last task in the plan.
 
 ## Skill Gap Report
 

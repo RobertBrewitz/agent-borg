@@ -48,7 +48,8 @@ Multiple agents may run concurrently on different plans. Never touch another age
    - Run `@self-review` light mode on the step's diff.
    - Commit after each step.
    - Update your progress file with completed step and next step number.
-   - Append gotchas to `AGENTS.md`, new tasks to `BACKLOG.md`.
+   - Append gotchas to `AGENTS.md`.
+   - For out-of-scope work discovered during execution, create a file in `$PROJECT_ROOT/plans/backlog/<short-name>.md` (see Backlog Items format below).
 8. If a step fails after 3 attempts, move plan to `$PROJECT_ROOT/plans/blocked/` and note the reason in your progress file.
 9. **End-of-plan quality gate:** When all steps complete, run the quality gate before moving to done/:
    1. Run `@cargo-lint` (full workspace).
@@ -65,6 +66,7 @@ You are working inside a **git worktree**. The project uses a bare repository la
 ├── main/                  # worktree: main branch
 ├── <feature-branch>/      # worktree: feature branches (one per plan)
 ├── plans/                 # plan files (sibling to worktrees)
+│   ├── backlog/           # task summaries — ideas/work items to turn into plans
 │   ├── design/            # design docs from /design skill
 │   ├── draft/             # plans being written or revised
 │   ├── todo/              # verified plans, ready for execution (polled by hive.sh)
@@ -189,15 +191,16 @@ Plans live in `$PROJECT_ROOT/plans/todo/` (e.g. `add-feature.md` or `add-feature
 ## Plan Lifecycle
 
 ```
-design/  →  draft/  →  todo/  →  in-progress/  →  done/  →  archive/
-(design)     (write-plan)  (verify-plan)  (implement-plan)       ↑
-                                ↓                                │
-                            blocked/                             │
-                                                                 │
-done/  →  merge/  →  (run via /merge)  ──────────────────────────┘
+backlog/  →  design/  →  draft/  →  todo/  →  in-progress/  →  done/  →  archive/
+             (design)     (write-plan)  (verify-plan)  (implement-plan)       ↑
+                                              ↓                               │
+                                          blocked/                            │
+                                                                              │
+done/  →  merge/  →  (run via /merge)  ───────────────────────────────────────┘
           (merge-plan)
 ```
 
+- **backlog/** — Task summaries: ideas and work items to be turned into plans. Each file is one task. Consumed by `/design`.
 - **design/** — Design docs from `/design`. Feed into `write-plan`.
 - **draft/** — Plan is being written or revised by `write-plan`.
 - **todo/** — Plan is verified and ready for execution. Polled by hive.sh. Only `verify-plan` promotes plans here.
@@ -236,10 +239,14 @@ Delete the progress file when the plan moves to `done/`. Leave it in place when 
 <description of pattern or gotcha>
 ```
 
-**BACKLOG.md**:
+**Backlog items** (`plans/backlog/<short-name>.md`):
 
-```
-- [ ] <short todo> (<difficulty>)
+One file per task. Filename is a kebab-case slug (e.g. `add-undo-support.md`). Commit to the plans repo after creating.
 
-      <detailed description>
+```markdown
+# <Short Title>
+
+**Difficulty:** trivial | easy | medium | hard
+
+<Description of the work — what needs to happen and why. 2-5 sentences.>
 ```
