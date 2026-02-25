@@ -179,10 +179,11 @@ Show stage summary and ask to continue (same checkpoint pattern).
 
 When all tasks (and stages) are done:
 
-1. Run a final verification (full test suite).
-2. Move plan from `in-progress/` to `done/`.
-3. Delete the progress file.
-4. Show summary:
+1. **Test cleanup:** Review all tests written during this plan. Delete any no-op tests that just restate the implementation (e.g. asserting a constant equals itself, checking a struct field exists, testing language guarantees). TDD scaffolding tests that were useful during development but are trivially true after implementation should be removed. Commit the cleanup separately.
+2. Run a final verification (full test suite).
+3. Move plan from `in-progress/` to `done/`.
+4. Delete the progress file.
+5. Show summary:
 
 ```
 Plan complete: <name>
@@ -191,7 +192,7 @@ Commits: <count>
 Branch: <branch-name>
 ```
 
-5. Ask: "Want to merge to main now, or leave in done/ for later? (Use `/merge-plan` to build a merge plan, then `/merge` to execute it.)"
+6. Ask: "Want to merge to main now, or leave in done/ for later? (Use `/merge-plan` to build a merge plan, then `/merge` to execute it.)"
 
 ## Progress File Format
 

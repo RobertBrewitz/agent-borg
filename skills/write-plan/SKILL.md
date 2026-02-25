@@ -12,7 +12,11 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 ## Overview
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. Frequent commits.
+
+- **DRY (Don't Repeat Yourself):** Extract shared logic when duplication is real and proven, not speculative. Three similar lines is fine — a premature abstraction is worse.
+- **YAGNI (You Aren't Gonna Need It):** Only build what the current task requires. No "while we're here" extras, no future-proofing hooks, no configurability nobody asked for.
+- **TDD (Test-Driven Development):** Write the test first, watch it fail, implement just enough to pass. But tests must earn their keep — if a test just restates the implementation (e.g. asserting a constant equals itself, or that a struct field exists), it's a no-op test. Prefer testing observable behavior, edge cases, and error paths. After implementation, review TDD scaffolding tests and delete any that are trivially true or that only test language/framework guarantees. **Tests must contain zero logic** — no conditionals, loops, calculations, or shared helpers. Each test constructs its own input as literals, calls the implementation, and asserts against literal expected values. That's it.
 
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 
@@ -206,6 +210,6 @@ After saving the plan:
 - Complete code in plan (not "add validation")
 - Exact commands with expected output
 - Reference relevant skills with @ syntax
-- DRY, YAGNI, TDD, frequent commits
+- DRY, YAGNI, TDD (see definitions in Overview), frequent commits
 - Skills first, then read code to fill gaps — never guess when you can look it up
 - Plans may have bugs — always read the relevant skills before implementing, even if a plan provides exact code
