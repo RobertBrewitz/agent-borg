@@ -46,7 +46,7 @@ Match plan names to branch names (e.g., `selective-mulligan.md` → branch `mull
 Use `AskUserQuestion` with `multiSelect: true`:
 
 - **Question:** "Which completed plans should be included in this merge?"
-- **Options:** List each plan with its branch name and diff stat summary (files changed, insertions, deletions).
+- **Options:** List each plan with its matched branch name. Do NOT collect diffs yet — that happens in Phase 2 after the user decides which plans to merge.
 
 ## Phase 2: Analyze Diffs
 
