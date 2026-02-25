@@ -8,9 +8,10 @@ A set of configuration files and skills that turn [Claude Code](https://docs.ant
 
 ## Task Planning
 
-1. Use the `design` skill to explore ideas and write design docs to `plans/design/`.
-2. Use the `write-plan` skill to create detailed implementation plans in `plans/draft/`.
-3. Use the `verify-plan` skill to review, rewrite, and promote plans to `plans/todo/`.
+1. Add task ideas to `plans/backlog/` as individual markdown files.
+2. Use the `design` skill to explore backlog items (or new ideas) and write design docs to `plans/design/`.
+3. Use the `write-plan` skill to create detailed implementation plans in `plans/draft/`.
+4. Use the `verify-plan` skill to review, rewrite, and promote plans to `plans/todo/`.
 
 ## Project Layout
 
@@ -21,6 +22,7 @@ The agent expects a bare repository with worktrees. The `plans/` directory is it
 ├── main/                  # worktree: main branch
 ├── <feature-branch>/      # worktree: feature branches (one per plan)
 ├── plans/                 # separate git repo for plan files
+│   ├── backlog/           # task summaries — ideas/work items to turn into plans
 │   ├── design/            # design docs from /design skill
 │   ├── draft/             # plans being written or revised
 │   ├── todo/              # verified plans, ready for execution (polled by hive.sh)
@@ -40,7 +42,7 @@ The agent expects a bare repository with worktrees. The `plans/` directory is it
 ## Setup
 
 1. Copy the contents of the `agent/` folder into each worktree root (or the main worktree).
-2. Create a `plans/` directory at `<project-root>/` and initialize it as its own git repo (`git init` inside `plans/`). Create the subdirectories: `design/`, `draft/`, `todo/`, `in-progress/`, `progress/`, `review/`, `done/`, `merge/`, `archive/`, `blocked/`.
+2. Create a `plans/` directory at `<project-root>/` and initialize it as its own git repo (`git init` inside `plans/`). Create the subdirectories: `backlog/`, `design/`, `draft/`, `todo/`, `in-progress/`, `progress/`, `review/`, `done/`, `merge/`, `archive/`, `blocked/`.
 3. Copy the contents of the `skills/` folder to `~/.claude/skills/` or the project's `.claude/skills/` folder. Alternatively, use `link-skills.sh` to symlink them.
 
 ## Agent Files
@@ -51,9 +53,6 @@ These files live in the `agent/` directory (and are copied to the worktree root 
 - **`coder.sh`** — Runs Claude Code in a loop on a single plan. Usage: `./coder.sh <branch> <path-to-plan>`. Creates or reuses a worktree for the given branch, then loops until the plan is done or blocked, handling context-window limits by re-invoking Claude (which resumes from the progress file). Includes retry logic with exponential backoff for transient API errors. Run multiple instances in parallel for concurrent plans.
 - **`hive.sh`** — Dispatcher that scans `plans/todo/` once, reads each plan's `**Branch:**` metadata, and dispatches a `coder.sh` instance per plan (up to `--max-concurrent N`, default 3). Waits for all agents to finish and reports completion status. Handles graceful shutdown on SIGINT/SIGTERM.
 - **`AGENTS.md`** — Shared knowledge base for patterns and gotchas discovered during execution. Agents append to this file so future iterations avoid repeating mistakes.
-- **`BACKLOG.md`** — Parking lot for tasks discovered during execution that are out of scope for the current plan.
-- **`PROGRESS.md`** — Template for per-plan progress tracking. Active progress files live in `plans/progress/`.
-- **`TODO.md`** — Template for tracking tasks within the current session.
 
 ## Skills
 
@@ -75,17 +74,18 @@ These files live in the `agent/` directory (and are copied to the worktree root 
 ## Plan Lifecycle
 
 ```
-design/  →  draft/  →  todo/  →  in-progress/  →  done/  →  archive/
-(design)   (write-plan) (verify-plan)  (implement-plan)       ↑
-                          review ↺                             │
-                            rewrite                            │
-                                ↓                              │
-                            blocked/                           │
-                                                               │
-done/  →  merge/  →  (run via /merge)  ────────────────────────┘
+backlog/  →  design/  →  draft/  →  todo/  →  in-progress/  →  done/  →  archive/
+             (design)   (write-plan) (verify-plan)  (implement-plan)       ↑
+                                       review ↺                             │
+                                         rewrite                            │
+                                             ↓                              │
+                                         blocked/                           │
+                                                                            │
+done/  →  merge/  →  (run via /merge)  ─────────────────────────────────────┘
           (merge-plan)
 ```
 
+- **backlog/** — Task summaries: ideas and work items to be turned into plans. Each file is one task. Consumed by `/design`.
 - **design/** — Design docs from `/design`. Feed into `write-plan`.
 - **draft/** — Plan is being written by `write-plan`, or being rewritten by `verify-plan`.
 - **todo/** — Plan is verified and ready for execution. Polled by `hive.sh`. Only `verify-plan` promotes plans here.
