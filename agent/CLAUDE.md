@@ -52,10 +52,9 @@ Multiple agents may run concurrently on different plans. Never touch another age
 8. If a step fails after 3 attempts, move plan to `$PROJECT_ROOT/plans/blocked/` and note the reason in your progress file.
 9. **End-of-plan quality gate:** When all steps complete, run the quality gate before moving to done/:
    1. Run `@cargo-lint` (full workspace).
-   2. Run `@test-audit` (review branch diff for test coverage gaps, write missing tests).
-   3. Run `@self-review` thorough mode (review full branch diff for logical errors).
-   4. If all pass: move plan to `$PROJECT_ROOT/plans/done/` and delete your progress file.
-   5. If any fail after retries: move plan to `$PROJECT_ROOT/plans/blocked/` and note the failure in your progress file.
+   2. Run `@self-review` thorough mode (review full branch diff for logical errors).
+   3. If all pass: move plan to `$PROJECT_ROOT/plans/done/` and delete your progress file.
+   4. If any fail after retries: move plan to `$PROJECT_ROOT/plans/blocked/` and note the failure in your progress file.
 
 ## Worktree Environment
 
@@ -183,10 +182,9 @@ Plans live in `$PROJECT_ROOT/plans/todo/` (e.g. `add-feature.md` or `add-feature
 - If a task fails after 3 attempts, move plan to `$PROJECT_ROOT/plans/blocked/` and note reason in the progress file.
 - End-of-plan quality gate (before moving to done/):
   1. `@cargo-lint` (full workspace)
-  2. `@test-audit` (branch diff test coverage)
-  3. `@self-review` thorough mode (full branch diff)
-  4. All pass → move to `$PROJECT_ROOT/plans/done/`
-  5. Any fail after retries → move to `$PROJECT_ROOT/plans/blocked/`
+  2. `@self-review` thorough mode (full branch diff)
+  3. All pass → move to `$PROJECT_ROOT/plans/done/`
+  4. Any fail after retries → move to `$PROJECT_ROOT/plans/blocked/`
 
 ## Plan Lifecycle
 

@@ -60,7 +60,7 @@ These files live in the `agent/` directory (and are copied to the worktree root 
 ### Plan Pipeline
 
 - **`design`** — Explores ideas through collaborative dialogue, writes design docs to `plans/design/`.
-- **`write-plan`** — Reads designs from `plans/design/`, creates detailed implementation plans in `plans/draft/`. TDD cycles, exact file paths, complete code, explicit commands. Single-file or multi-stage folders.
+- **`write-plan`** — Reads designs from `plans/design/`, creates detailed implementation plans in `plans/draft/`. Exact file paths, complete code, explicit commands. No tests. Single-file or multi-stage folders.
 - **`verify-plan`** — Reads plans from `plans/draft/`, validates structure and feasibility. Rewrites the plan to fix any issues found, re-verifies, and promotes passing plans to `plans/todo/`.
 - **`implement-plan`** — Reads plans from `plans/todo/`, executes interactively with user checkpoints. Completed plans go to `plans/done/`.
 - **`merge-plan`** — Reads completed plans from `plans/done/`, analyzes worktree branches, writes merge plans to `plans/merge/`.

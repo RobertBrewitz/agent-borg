@@ -65,10 +65,10 @@ Check against `writing-plans` conventions. For each item, assign PASS, FAIL, or 
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Task heading        | `### Task N: [Component Name]` (always H3, no other heading levels inside tasks)                                                                                                                                               |
 | Step labels         | `**Step N: ...**` (bold text, not headings)                                                                                                                                                                                    |
-| Files section       | `**Files:**` with Create/Modify/Test lines                                                                                                                                                                                     |
+| Files section       | `**Files:**` with Create/Modify lines (no Test lines — plans must never include tests)                                                                                                                                        |
 | Modify line ranges  | `file.rs:123-145` format (not bare paths)                                                                                                                                                                                      |
-| TDD cycle           | TDD tasks: 5 steps — write test → run (expect FAIL) → implement → run (expect PASS) → commit. Non-TDD tasks (wiring, config, imports, formatting): change → verify (`cargo check`) → commit (3 steps). Both formats are valid. |
-| Test quality         | Tests must contain zero logic — no conditionals, loops, calculations, or shared helpers. Each test constructs its own literal inputs, calls the implementation, and asserts against literal expected values. Flag no-op tests (asserting constants, checking struct existence, testing language guarantees). Prefer edge cases, error paths, and integration points. |
+| Task cycle          | Implement → verify (`cargo check`) → commit. No test steps, no test files.                                                                                                                                                     |
+| No tests            | Flag any `#[test]`, `#[cfg(test)]`, `Test:` file entries, or test-related steps as FAIL. Plans must never include tests.                                                                                                       |
 | Single-action steps | Each step is one action, not compound                                                                                                                                                                                          |
 | Complete code       | No placeholder comments ("add logic here", "implement this", "TODO")                                                                                                                                                           |
 | Run/Expected pairs  | Every `Run:` has a corresponding `Expected:`                                                                                                                                                                                   |
@@ -168,7 +168,7 @@ If the verdict is anything other than **READY**, rewrite the plan to fix all iss
 
 **Rewrite rules:**
 
-1. Follow all `write-plan` conventions (task structure, TDD cycle, header format, etc.)
+1. Follow all `write-plan` conventions (task structure, no tests, header format, etc.)
 2. Use loaded skills and source code as reference — same sources you used during review
 3. Rewrite in-place: overwrite the plan file in `$PLANS_DIR/draft/`
 4. For folder plans, rewrite only the stage files that had issues

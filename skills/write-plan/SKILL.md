@@ -12,11 +12,11 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 ## Overview
 
-Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. Frequent commits.
+Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, docs they might need to check, how to verify it compiles. Give them the whole plan as bite-sized tasks. Frequent commits.
 
 - **DRY (Don't Repeat Yourself):** Extract shared logic when duplication is real and proven, not speculative. Three similar lines is fine — a premature abstraction is worse.
 - **YAGNI (You Aren't Gonna Need It):** Only build what the current task requires. No "while we're here" extras, no future-proofing hooks, no configurability nobody asked for.
-- **TDD (Test-Driven Development):** Write the test first, watch it fail, implement just enough to pass. But tests must earn their keep — if a test just restates the implementation (e.g. asserting a constant equals itself, or that a struct field exists), it's a no-op test. Prefer testing observable behavior, edge cases, and error paths. After implementation, review TDD scaffolding tests and delete any that are trivially true or that only test language/framework guarantees. **Tests must contain zero logic** — no conditionals, loops, calculations, or shared helpers. Each test constructs its own input as literals, calls the implementation, and asserts against literal expected values. That's it.
+- **No tests.** Never add tests to a plan. No test files, no `#[test]` functions, no test modules. Testing is a separate concern handled outside the plan pipeline.
 
 Assume they are a skilled developer, but know almost nothing about our toolset or problem domain. Assume they don't know good test design very well.
 
@@ -53,10 +53,8 @@ Then:
 
 **Each step is one action (2-5 minutes):**
 
-- "Write the failing test" - step
-- "Run it to make sure it fails" - step
-- "Implement the minimal code to make the test pass" - step
-- "Run the tests and make sure they pass" - step
+- "Write the implementation code" - step
+- "Run `cargo check` to verify it compiles" - step
 - "Commit" - step
 
 ## Gather agent skills (REQUIRED — your primary source of codebase knowledge)
@@ -98,9 +96,7 @@ Read every provided skill (`skills/<name>/SKILL.md`). These are your primary ref
 
 ## Task Structure
 
-There are two task formats: **TDD** (default for anything that produces testable behavior) and **non-TDD** (for wiring, config, imports, formatting — no testable behavior). Both use `### Task N:` headings and `**Step N:**` bold labels for steps. No other heading levels inside tasks.
-
-**TDD task** (default):
+All tasks use `### Task N:` headings and `**Step N:**` bold labels for steps. No other heading levels inside tasks. **Never include test files or test code.**
 
 ````markdown
 ### Task N: [Component Name]
@@ -109,54 +105,13 @@ There are two task formats: **TDD** (default for anything that produces testable
 
 - Create: `exact/path/to/file.rs`
 - Modify: `exact/path/to/existing.rs:123-145`
-- Test: `tests/exact/path/to/test.rs`
 
-**Step 1: Write the failing test**
-
-```rust
-#[test]
-fn test_specific_behavior() {
-    let result = function(input);
-    assert_eq!(result, expected);
-}
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cargo test test_specific_behavior`
-Expected: FAIL (test should fail since implementation doesn't exist yet)
-
-**Step 3: Write minimal implementation**
+**Step 1: Write the implementation**
 
 ```rust
 pub fn function(input: Type) -> ReturnType {
-    expected
+    // complete code here
 }
-```
-
-**Step 4: Run test to verify it passes**
-
-Run: `cargo test test_specific_behavior`
-Expected: PASS
-
-**Step 5: Commit**
-
-Run: `git add tests/path/test.rs src/path/file.rs && git commit -m "feat: add specific feature"`
-````
-
-**Non-TDD task** (wiring, config, imports, formatting):
-
-````markdown
-### Task N: [Component Name]
-
-**Files:**
-
-- Modify: `exact/path/to/file.rs:10-15`
-
-**Step 1: Make the change**
-
-```rust
-// complete code here
 ```
 
 **Step 2: Verify**
@@ -166,7 +121,7 @@ Expected: PASS
 
 **Step 3: Commit**
 
-Run: `git add exact/path/to/file.rs && git commit -m "chore: description"`
+Run: `git add src/path/file.rs && git commit -m "feat: add specific feature"`
 ````
 
 ## Backlog Updates
@@ -210,6 +165,6 @@ After saving the plan:
 - Complete code in plan (not "add validation")
 - Exact commands with expected output
 - Reference relevant skills with @ syntax
-- DRY, YAGNI, TDD (see definitions in Overview), frequent commits
+- DRY, YAGNI, no tests (see definitions in Overview), frequent commits
 - Skills first, then read code to fill gaps — never guess when you can look it up
 - Plans may have bugs — always read the relevant skills before implementing, even if a plan provides exact code
