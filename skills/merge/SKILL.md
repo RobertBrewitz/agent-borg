@@ -99,7 +99,7 @@ After all feature branches are merged into the integration branch:
    - **Question:** "All branches merged and tests pass. Land on main?"
    - **Options:** "Merge to main" / "Let me inspect first" / "Abort"
 
-4. If approved, merge integration branch into main (no fast-forward).
+4. If approved, build the changes summary (see Phase 5 for format) and use it as the `--no-ff` merge commit message.
 5. Verify main passes tests.
 
 ## Phase 5: Archive and Clean Up
@@ -112,11 +112,23 @@ After landing on main:
 4. Remove integration worktree then branch (same order, same flags).
 5. Commit the plan moves (run all plan-directory git commands from `$PLANS_DIR` — it is its own git repo, separate from the project repo).
 
-Show final summary:
+Write a **changes summary** for the merge commit message and final output. Read each merged plan's goal/description and the squash commit messages. Format as a short title line naming the merged features, followed by one paragraph per feature describing what actually changed. This goes in both the `--no-ff` merge commit message and the final output shown to the user.
+
+Example:
 
 ```
-Merge complete.
-Branches merged: <list>
+integrate: feature-a + feature-b
+
+- Feature A: short description of what changed and why. Mention new
+  APIs added, old code removed, and behavioral differences.
+
+- Feature B: short description of what changed and why. Mention new
+  APIs added, old code removed, and behavioral differences.
+```
+
+After the summary, show cleanup info:
+
+```
 Plans archived: <list>
 Worktrees removed: <list>
 Main: <git hash> — tests pass

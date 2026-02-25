@@ -32,7 +32,7 @@ Then re-run the check:
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-- If clean: done.
+- If clean: stage the auto-fixed files (`git add -A`) so fixes are included in the next commit. Done.
 - If still failing: go to Step 3.
 
 ### Step 3: Manual fix

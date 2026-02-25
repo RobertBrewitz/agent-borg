@@ -213,11 +213,25 @@ cargo fmt && cargo check && cargo test
 
 Expected: PASS
 
-**Step 2: Merge integration branch into main**
+**Step 2: Build changes summary and merge integration branch into main**
+
+Write a changes summary for the merge commit. Read each merged plan's goal and the squash commit messages. Format: a title line naming the merged features, then one paragraph per feature describing what actually changed (new APIs, removed code, behavioral changes). Example:
+
+```
+integrate: feature-a + feature-b
+
+- Feature A: short description of what changed and why. Mention new
+  APIs added, old code removed, and behavioral differences.
+
+- Feature B: short description of what changed and why. Mention new
+  APIs added, old code removed, and behavioral differences.
+```
+
+Use this as the merge commit message:
 
 ```bash
 cd $PROJECT_ROOT/main
-git merge integrate/<name> --no-ff -m "integrate: merge <name> into main"
+git merge integrate/<name> --no-ff -m "<changes summary>"
 ```
 
 If main moved ahead, rebase integration branch onto main, re-verify, then merge.

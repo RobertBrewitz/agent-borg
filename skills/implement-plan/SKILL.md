@@ -122,7 +122,8 @@ Execute each step in the task sequentially:
 1. **Read the relevant skills** listed in the plan header before implementing — plans may have bugs, skills are the source of truth.
 2. Follow the step instructions from the plan.
 3. After implementation steps, run verification: the project's build/test commands (e.g., `cargo fmt && cargo check && cargo test`, `npm test`, etc.). Use whatever the plan specifies in its Run/Expected pairs.
-4. Show the user the result (pass/fail, test output summary).
+4. **Stage all changes** including any formatting or lint auto-fixes (`git add -A`) so nothing is left unstaged before commit.
+5. Show the user the result (pass/fail, test output summary).
 
 **On step failure:**
 

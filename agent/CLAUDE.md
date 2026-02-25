@@ -45,6 +45,7 @@ Multiple agents may run concurrently on different plans. Never touch another age
    - Follow the step exactly.
    - Run `cargo fmt && cargo check && cargo test` after each step.
    - Run the `@cargo-lint` skill (clippy with `-D warnings`, auto-fix).
+   - Stage all changes (including formatting and lint auto-fixes): `git add -A`
    - Run `@self-review` light mode on the step's diff.
    - Commit after each step.
    - Update your progress file with completed step and next step number.
@@ -179,8 +180,9 @@ Plans live in `$PROJECT_ROOT/plans/todo/` (e.g. `add-feature.md` or `add-feature
 - After each task:
   1. Run `cargo fmt && cargo check && cargo test`.
   2. Run `@cargo-lint` (clippy with `-D warnings`, auto-fix).
-  3. Run `@self-review` light mode on the task's diff.
-  4. Commit.
+  3. Stage all changes (including formatting and lint auto-fixes): `git add -A`
+  4. Run `@self-review` light mode on the task's diff.
+  5. Commit.
 - If a task fails after 3 attempts, move plan to `$PROJECT_ROOT/plans/blocked/` and note reason in the progress file.
 - End-of-plan quality gate (before moving to done/):
   1. `@cargo-lint` (full workspace)
