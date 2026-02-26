@@ -1,24 +1,28 @@
 #!/bin/bash
-# Hive - Dispatch agents for all plans in todo/, report completion once per job
-# Usage: ./hive.sh [--max-concurrent N]
+# Hive - Continuously dispatch agents for plans in todo/
+# Usage: ./hive.sh [--max-concurrent N] [--poll-interval S]
 #
-# Scans plans/todo/ once, dispatches agents for each plan (up to max-concurrent
-# at a time), waits for each to finish, and prints completion status.
+# Continuously polls plans/todo/ for new plans, dispatches agents (up to
+# max-concurrent at a time), and reports completion status. Runs until
+# interrupted with Ctrl-C.
 
 set -e
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 MAX_CONCURRENT=3      # max parallel agents
+POLL_INTERVAL=10      # seconds between polls for new plans
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --max-concurrent) MAX_CONCURRENT="$2"; shift 2 ;;
+    --poll-interval) POLL_INTERVAL="$2"; shift 2 ;;
     -h|--help)
-      echo "Usage: ./hive.sh [--max-concurrent N]"
+      echo "Usage: ./hive.sh [--max-concurrent N] [--poll-interval S]"
       echo ""
       echo "Options:"
       echo "  --max-concurrent Max parallel agents (default: 3)"
+      echo "  --poll-interval  Seconds between todo/ polls (default: 10)"
       exit 0 ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
@@ -93,80 +97,63 @@ read_plan_branch() {
   fi
 }
 
-# Wait for any one child to finish, report its status, return its pid
-wait_for_one() {
-  if ! wait -n -p FINISHED_PID 2>/dev/null; then
-    # wait -n -p not supported (bash < 5.1), fall back to polling
-    while true; do
-      for pid in "${!ACTIVE_PIDS[@]}"; do
-        if ! kill -0 "$pid" 2>/dev/null; then
-          wait "$pid" 2>/dev/null
-          WAIT_EXIT=$?
-          FINISHED_PID="$pid"
-          return
-        fi
-      done
-      sleep 1
-    done
-  fi
-  WAIT_EXIT=$?
-}
+# ── Continuous poll and dispatch ──────────────────────────────────────────────
+declare -A DISPATCHED  # plan-name -> 1 (tracks already-dispatched plans)
+active_count=0
 
-# ── Collect plans ────────────────────────────────────────────────────────────
-PLANS=()
-for plan_path in "$PLANS_DIR/todo/"*.md "$PLANS_DIR/todo/"*/; do
-  [ -e "$plan_path" ] || continue
-  PLANS+=("$plan_path")
-done
-
-if [ ${#PLANS[@]} -eq 0 ]; then
-  echo "No plans in todo/."
-  exit 0
-fi
-
-echo "Hive: ${#PLANS[@]} plan(s) to dispatch (max $MAX_CONCURRENT concurrent)"
+echo "Hive: polling todo/ every ${POLL_INTERVAL}s (max $MAX_CONCURRENT concurrent)"
+echo "Press Ctrl-C to stop."
 echo ""
 
-# ── Dispatch and wait ─────────────────────────────────────────────────────────
-active_count=0
-plan_idx=0
+# Reap any finished agents, non-blocking
+reap_finished() {
+  for pid in "${!ACTIVE_PIDS[@]}"; do
+    if ! kill -0 "$pid" 2>/dev/null; then
+      wait "$pid" 2>/dev/null
+      local exit_code=$?
+      local name="${ACTIVE_PIDS[$pid]}"
+      if [ "$exit_code" -eq 0 ]; then
+        echo "[$(date '+%H:%M:%S')] done '$name'"
+      else
+        echo "[$(date '+%H:%M:%S')] FAILED '$name' (exit $exit_code)"
+      fi
+      unset "ACTIVE_PIDS[$pid]"
+      active_count=$((active_count - 1))
+    fi
+  done
+}
 
-while [ "$plan_idx" -lt "${#PLANS[@]}" ] || [ "$active_count" -gt 0 ]; do
-  # Dispatch plans up to concurrency limit
-  while [ "$plan_idx" -lt "${#PLANS[@]}" ] && [ "$active_count" -lt "$MAX_CONCURRENT" ]; do
-    plan_path="${PLANS[$plan_idx]}"
-    plan_idx=$((plan_idx + 1))
+while true; do
+  # Reap finished agents
+  reap_finished
+
+  # Scan todo/ for new plans
+  for plan_path in "$PLANS_DIR/todo/"*.md "$PLANS_DIR/todo/"*/; do
+    [ -e "$plan_path" ] || continue
 
     plan_name="$(basename "$plan_path")"
     plan_name="$(plan_to_name "$plan_name")"
-    branch="$(read_plan_branch "$plan_path" "$plan_name")"
 
+    # Skip already-dispatched plans
+    [ -n "${DISPATCHED[$plan_name]+x}" ] && continue
+
+    # Wait if at concurrency limit
+    while [ "$active_count" -ge "$MAX_CONCURRENT" ]; do
+      sleep 1
+      reap_finished
+    done
+
+    branch="$(read_plan_branch "$plan_path" "$plan_name")"
     echo "[$(date '+%H:%M:%S')] Dispatching '$plan_name' -> branch '$branch'"
 
     setsid "$CODER_SH" "$branch" "$plan_path" > /dev/null 2>&1 &
     agent_pid=$!
     ACTIVE_PIDS[$agent_pid]="$plan_name"
+    DISPATCHED[$plan_name]=1
     active_count=$((active_count + 1))
   done
 
-  # Wait for next agent to finish
-  if [ "$active_count" -gt 0 ]; then
-    FINISHED_PID=""
-    WAIT_EXIT=0
-    wait_for_one
-
-    if [ -n "$FINISHED_PID" ] && [ -n "${ACTIVE_PIDS[$FINISHED_PID]+x}" ]; then
-      plan_name="${ACTIVE_PIDS[$FINISHED_PID]}"
-      if [ "$WAIT_EXIT" -eq 0 ]; then
-        echo "[$(date '+%H:%M:%S')] done '$plan_name'"
-      else
-        echo "[$(date '+%H:%M:%S')] FAILED '$plan_name' (exit $WAIT_EXIT)"
-      fi
-      unset "ACTIVE_PIDS[$FINISHED_PID]"
-      active_count=$((active_count - 1))
-    fi
-  fi
+  # Sleep before next poll (interruptible by trap)
+  sleep "$POLL_INTERVAL" &
+  wait $! 2>/dev/null || true
 done
-
-echo ""
-echo "All plans dispatched and completed."
