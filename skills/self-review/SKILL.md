@@ -101,10 +101,12 @@ git diff main...HEAD --stat
    - Fix each issue.
    - Run `cargo fmt && cargo check && cargo test` after all fixes.
    - Commit fixes as a separate commit: `git add -A && git commit -m "chore: self-review fixes"`
+   - Delete the review file (`$PLANS_DIR/review/<plan-name>-self-review.md`) and commit the deletion — all findings are resolved, the file is now stale.
 
 8. If there are issues you cannot resolve (design-level problems, ambiguous requirements, changes that would contradict the plan):
    - Note them in the review file under a `## Unresolved` section.
    - These cause the quality gate to fail — the plan moves to `blocked/`.
+   - The review file is kept so the unresolved issues remain visible.
 
 ### Retry Logic
 
