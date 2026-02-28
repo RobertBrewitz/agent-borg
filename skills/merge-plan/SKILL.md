@@ -101,10 +101,10 @@ Order branches by conflict minimization:
 
 ## Phase 4: Write the Merge Plan
 
-**Naming:** Derive the merge name from the branches being merged — take the first 4 characters of each branch name, join with `-`, append `-merge`. For example, merging branches `audio-player` and `selective-mulligan` produces the name `audi-sele-merge`. Use this for both the plan filename and integration branch:
+**Naming:** Derive the merge name from the branches being merged — use the full branch names, join with `-`, append `-merge`. For example, merging branches `audio-player` and `selective-mulligan` produces the name `audio-player-selective-mulligan-merge`. Use this for both the plan filename and integration branch:
 
-- **Plan:** `$PLANS_DIR/merge/<name>.md` (e.g., `merge/audi-sele-merge.md`)
-- **Integration branch:** `integrate/<name>` (e.g., `integrate/audi-sele-merge`)
+- **Plan:** `$PLANS_DIR/merge/<name>.md` (e.g., `merge/audio-player-selective-mulligan-merge.md`)
+- **Integration branch:** `integrate/<name>` (e.g., `integrate/audio-player-selective-mulligan-merge`)
 
 **Important:** Merge plans go to `plans/merge/`, NOT `plans/draft/` or `plans/todo/`. The `todo/` directory is polled by hive.sh for autonomous execution — merges require human oversight and must be run interactively via `/merge`.
 
