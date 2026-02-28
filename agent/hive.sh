@@ -1,28 +1,38 @@
 #!/bin/bash
 # Hive - Continuously dispatch agents for plans in todo/
-# Usage: ./hive.sh [--max-concurrent N] [--poll-interval S]
+# Usage: ./hive.sh [OPTIONS]
 #
 # Continuously polls plans/todo/ for new plans, dispatches agents (up to
-# max-concurrent at a time), and reports completion status. Runs until
-# interrupted with Ctrl-C.
+# max-concurrent at a time), and reports completion status. Recovers stale
+# plans left in in-progress/ by crashed agents. Runs until interrupted
+# with Ctrl-C.
 
 set -e
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 MAX_CONCURRENT=3      # max parallel agents
 POLL_INTERVAL=10      # seconds between polls for new plans
+STALE_TIMEOUT=1800    # seconds before an in-progress plan with no active agent is recovered (30 min)
+MAX_RETRIES=3         # max times to re-dispatch a failed plan before moving to blocked/
+RETRY_BLOCKED=false   # when true, move all blocked/ plans back to todo/ on startup
 
 # ── Parse args ────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --max-concurrent) MAX_CONCURRENT="$2"; shift 2 ;;
     --poll-interval) POLL_INTERVAL="$2"; shift 2 ;;
+    --stale-timeout) STALE_TIMEOUT="$2"; shift 2 ;;
+    --max-retries) MAX_RETRIES="$2"; shift 2 ;;
+    --retry-blocked) RETRY_BLOCKED=true; shift ;;
     -h|--help)
-      echo "Usage: ./hive.sh [--max-concurrent N] [--poll-interval S]"
+      echo "Usage: ./hive.sh [OPTIONS]"
       echo ""
       echo "Options:"
-      echo "  --max-concurrent Max parallel agents (default: 3)"
-      echo "  --poll-interval  Seconds between todo/ polls (default: 10)"
+      echo "  --max-concurrent N  Max parallel agents (default: 3)"
+      echo "  --poll-interval S   Seconds between todo/ polls (default: 10)"
+      echo "  --stale-timeout S   Seconds before recovering stale in-progress plans (default: 1800)"
+      echo "  --max-retries N     Max re-dispatches before moving to blocked/ (default: 3)"
+      echo "  --retry-blocked     Move all blocked/ plans back to todo/ on startup"
       exit 0 ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
@@ -97,11 +107,83 @@ read_plan_branch() {
   fi
 }
 
+# Find a plan's path in a given status directory (returns file or folder path, empty if not found)
+find_plan_in() {
+  local dir="$1" name="$2"
+  if [ -f "$dir/${name}.md" ]; then
+    echo "$dir/${name}.md"
+  elif [ -d "$dir/${name}" ]; then
+    echo "$dir/${name}"
+  fi
+}
+
 # ── Continuous poll and dispatch ──────────────────────────────────────────────
-declare -A DISPATCHED  # plan-name -> 1 (tracks already-dispatched plans)
+declare -A DISPATCHED       # plan-name -> 1 (tracks already-dispatched plans)
+declare -A DISPATCH_RETRIES # plan-name -> number of times re-dispatched after failure
 active_count=0
 
-echo "Hive: polling todo/ every ${POLL_INTERVAL}s (max $MAX_CONCURRENT concurrent)"
+# Recover orphaned plans left in in-progress/ with no active agent
+recover_orphans() {
+  # Collect names of plans with active agents
+  local -A active_names
+  for pid in "${!ACTIVE_PIDS[@]}"; do
+    active_names["${ACTIVE_PIDS[$pid]}"]=1
+  done
+
+  for plan_path in "$PLANS_DIR/in-progress/"*.md "$PLANS_DIR/in-progress/"*/; do
+    [ -e "$plan_path" ] || continue
+    local plan_name
+    plan_name="$(basename "$plan_path")"
+    plan_name="$(plan_to_name "$plan_name")"
+
+    # Skip if an agent is actively working on it
+    [ -n "${active_names[$plan_name]+x}" ] && continue
+
+    # Check staleness via progress file mtime (fall back to plan path)
+    local check_file="$plan_path"
+    [ -f "$PLANS_DIR/progress/${plan_name}.md" ] && check_file="$PLANS_DIR/progress/${plan_name}.md"
+
+    local mtime now age
+    mtime="$(stat -c %Y "$check_file" 2>/dev/null || echo 0)"
+    now="$(date +%s)"
+    age=$((now - mtime))
+
+    if [ "$age" -gt "$STALE_TIMEOUT" ]; then
+      local retries="${DISPATCH_RETRIES[$plan_name]:-0}"
+      retries=$((retries + 1))
+      DISPATCH_RETRIES[$plan_name]=$retries
+      if [ "$retries" -ge "$MAX_RETRIES" ]; then
+        echo "[$(date '+%H:%M:%S')] Stale plan '$plan_name' (${age}s) -> blocked/ after $retries failed attempts"
+        mv "$plan_path" "$PLANS_DIR/blocked/"
+      else
+        echo "[$(date '+%H:%M:%S')] Recovering stale plan '$plan_name' (${age}s) -> todo/ (attempt $retries/$MAX_RETRIES)"
+        mv "$plan_path" "$PLANS_DIR/todo/"
+        unset "DISPATCHED[$plan_name]"
+      fi
+    fi
+  done
+}
+
+# Move all blocked/ plans back to todo/
+retry_blocked_plans() {
+  for plan_path in "$PLANS_DIR/blocked/"*.md "$PLANS_DIR/blocked/"*/; do
+    [ -e "$plan_path" ] || continue
+    local plan_name
+    plan_name="$(basename "$plan_path")"
+    plan_name="$(plan_to_name "$plan_name")"
+    echo "[$(date '+%H:%M:%S')] Retrying blocked plan '$plan_name' -> todo/"
+    mv "$plan_path" "$PLANS_DIR/todo/"
+    unset "DISPATCHED[$plan_name]"
+    DISPATCH_RETRIES[$plan_name]=0
+  done
+}
+
+# ── Retry blocked plans on startup if requested ─────────────────────────────
+if [ "$RETRY_BLOCKED" = true ]; then
+  retry_blocked_plans
+fi
+
+echo "Hive: polling todo/ every ${POLL_INTERVAL}s (max $MAX_CONCURRENT concurrent, stale after ${STALE_TIMEOUT}s)"
 echo "Press Ctrl-C to stop."
 echo ""
 
@@ -116,6 +198,22 @@ reap_finished() {
         echo "[$(date '+%H:%M:%S')] done '$name'"
       else
         echo "[$(date '+%H:%M:%S')] FAILED '$name' (exit $exit_code)"
+        # If plan is still in in-progress/, recover it
+        local stuck_path
+        stuck_path="$(find_plan_in "$PLANS_DIR/in-progress" "$name")"
+        if [ -n "$stuck_path" ]; then
+          local retries="${DISPATCH_RETRIES[$name]:-0}"
+          retries=$((retries + 1))
+          DISPATCH_RETRIES[$name]=$retries
+          if [ "$retries" -ge "$MAX_RETRIES" ]; then
+            echo "[$(date '+%H:%M:%S')] Moving '$name' to blocked/ after $retries failed attempts"
+            mv "$stuck_path" "$PLANS_DIR/blocked/"
+          else
+            echo "[$(date '+%H:%M:%S')] Re-queuing '$name' to todo/ (attempt $retries/$MAX_RETRIES)"
+            mv "$stuck_path" "$PLANS_DIR/todo/"
+            unset "DISPATCHED[$name]"
+          fi
+        fi
       fi
       unset "ACTIVE_PIDS[$pid]"
       active_count=$((active_count - 1))
@@ -124,8 +222,9 @@ reap_finished() {
 }
 
 while true; do
-  # Reap finished agents
+  # Reap finished agents and recover orphaned plans
   reap_finished
+  recover_orphans
 
   # Scan todo/ for new plans
   for plan_path in "$PLANS_DIR/todo/"*.md "$PLANS_DIR/todo/"*/; do
