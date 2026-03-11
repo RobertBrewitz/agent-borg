@@ -43,9 +43,10 @@ Multiple agents may run concurrently on different plans. Never touch another age
 6. **Create a progress file:** Write `$PROJECT_ROOT/plans/progress/<plan-name>.md`. This is your isolated progress file — no other agent will touch it (see Append Formats).
 7. Execute the plan one step at a time:
    - Follow the step exactly.
-   - Run `cargo fmt && cargo check && cargo test` after each step.
+   - Run `cargo fmt`, stage and commit formatting changes (if any).
+   - Run `cargo check && cargo test`.
    - Run the `@cargo-lint` skill (clippy with `-D warnings`, auto-fix).
-   - Stage all changes (including formatting and lint auto-fixes): `git add -A`
+   - Stage all changes (including lint auto-fixes): `git add -A`
    - Run `@self-review` light mode on the step's diff.
    - Commit after each step.
    - Update your progress file with completed step and next step number.
@@ -178,11 +179,12 @@ Plans live in `$PROJECT_ROOT/plans/todo/` (e.g. `add-feature.md` or `add-feature
 - Execute tasks in order, follow steps exactly.
 - For folder plans, execute stages in numeric order. Complete all tasks in a stage before moving to the next.
 - After each task:
-  1. Run `cargo fmt && cargo check && cargo test`.
-  2. Run `@cargo-lint` (clippy with `-D warnings`, auto-fix).
-  3. Stage all changes (including formatting and lint auto-fixes): `git add -A`
-  4. Run `@self-review` light mode on the task's diff.
-  5. Commit.
+  1. Run `cargo fmt`, stage and commit formatting changes (if any).
+  2. Run `cargo check && cargo test`.
+  3. Run `@cargo-lint` (clippy with `-D warnings`, auto-fix).
+  4. Stage all changes (including lint auto-fixes): `git add -A`
+  5. Run `@self-review` light mode on the task's diff.
+  6. Commit.
 - If a task fails after 3 attempts, move plan to `$PROJECT_ROOT/plans/blocked/` and note reason in the progress file.
 - End-of-plan quality gate (before moving to done/):
   1. `@cargo-lint` (full workspace)
