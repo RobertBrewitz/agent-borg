@@ -48,7 +48,7 @@ The project backlog lives at `plans/backlog/` — one markdown file per task. Wh
 3. Read the selected backlog files to understand the task context
 4. The user may combine multiple backlog tasks into a single design/plan
 
-Keep track of which backlog files fed into the design. The resulting plan should include a task that deletes the consumed backlog files from `plans/backlog/` (committed in the plans repo).
+Keep track of which backlog files fed into the design. Delete the consumed backlog files from `plans/backlog/` when committing the design document — don't defer this to the plan.
 
 ## After the Design
 
