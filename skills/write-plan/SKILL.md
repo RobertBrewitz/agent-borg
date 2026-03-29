@@ -59,11 +59,9 @@ Then:
 
 ## Gather agent skills (REQUIRED — your primary source of codebase knowledge)
 
-**Ask the human:** "What agent skills should I use for this plan?"
+**Auto-discover skills:** List skills in `~/.claude/skills/` (global) and `./.claude/skills/` (project-local) — no other search paths exist. Read each skill's `SKILL.md` description/header to determine which ones are relevant to the plan's feature area. Select the relevant skills yourself. If you're unsure which skills apply (ambiguous domain, overlapping skills, or no clear match), ask the human: "I found these potentially relevant skills: [list]. Which should I use, or are there others?"
 
-Skills live in `~/.claude/skills/` (global) and `./.claude/skills/` (project-local). No other search paths exist.
-
-Read every provided skill (`skills/<name>/SKILL.md`). These are your primary reference for:
+Read every selected skill (`skills/<name>/SKILL.md`). These are your primary reference for:
 
 - File paths and line ranges
 - Struct/function names and signatures
