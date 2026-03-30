@@ -36,6 +36,7 @@ Start by understanding the current project context, then ask questions one at a 
 - Once you believe you understand what you're building, present the design
 - Break it into sections of 200-300 words
 - Ask after each section whether it looks right so far
+- If the user makes changes to a section, present the updated section and re-confirm before moving on
 - Cover: architecture, components, data flow, error handling, testing
 - Be ready to go back and clarify if something doesn't make sense
 
