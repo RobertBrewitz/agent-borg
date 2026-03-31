@@ -15,6 +15,17 @@ Help turn ideas into fully formed designs and specs through natural collaborativ
 
 Start by understanding the current project context, then ask questions one at a time to refine the idea. Once you understand what you're building, present the design in small sections (200-300 words), checking after each section whether it looks right so far.
 
+## Resolve Plans Directory
+
+Before accessing any plan files, resolve the project root and plans directory. The bare repository IS the project root — `git rev-parse --git-common-dir` returns it directly (do NOT go to its parent):
+
+```bash
+PROJECT_ROOT="$(git rev-parse --git-common-dir)"
+PLANS_DIR="$PROJECT_ROOT/plans"
+```
+
+All plan paths below use `$PLANS_DIR` as the root.
+
 ## The Process
 
 **Understanding the idea:**
@@ -42,20 +53,20 @@ Start by understanding the current project context, then ask questions one at a 
 
 ## Working from the Backlog
 
-The project backlog lives at `plans/backlog/` — one markdown file per task. When starting a design session:
+The project backlog lives at `$PLANS_DIR/backlog/` — one markdown file per task. When starting a design session:
 
 1. List files in `$PLANS_DIR/backlog/` and present them to the user
 2. Ask if any backlog items should feed into this design (or "None — new idea")
 3. Read the selected backlog files to understand the task context
 4. The user may combine multiple backlog tasks into a single design/plan
 
-Keep track of which backlog files fed into the design. Delete the consumed backlog files from `plans/backlog/` when committing the design document — don't defer this to the plan.
+Keep track of which backlog files fed into the design. Delete the consumed backlog files from `$PLANS_DIR/backlog/` when committing the design document — don't defer this to the plan.
 
 ## After the Design
 
 **Documentation:**
 
-- Write the validated design to `plans/design/<topic>-design.md`
+- Write the validated design to `$PLANS_DIR/design/<topic>-design.md`
 - Commit the design document (run all git commands from `$PLANS_DIR` — it is its own git repo)
 - Note: this design file is temporary — it gets deleted once a plan is created from it
 
