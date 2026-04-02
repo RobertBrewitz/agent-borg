@@ -149,6 +149,12 @@ The following were looked up from source code because no skill covered them:
 
 Each entry should note the file/symbol looked up and which task needed it. This tells the user which skills to create for future plans.
 
+## Design Coverage Check
+
+If the plan was created from a design document, re-read the design and verify every requirement, component, and decision is accounted for in the plan. Walk through the design section by section and confirm each item maps to at least one task.
+
+If anything is missing, add tasks to cover it before proceeding. Do not move on to cleanup until every design element has a corresponding plan task.
+
 ## Cleanup
 
 After saving the plan:
