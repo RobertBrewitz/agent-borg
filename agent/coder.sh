@@ -87,6 +87,7 @@ echo "Worktree: $WORKTREE_DIR (branch: $BRANCH)"
 
 # Function to run claude with retry logic for transient errors
 run_claude_with_retry() {
+  local session_id="$1"
   local max_retries=3
   local retry_delay=5
   local attempt=1
@@ -98,8 +99,9 @@ run_claude_with_retry() {
     # Run in background + wait so that our INT trap fires immediately
     set +e
     claude --model "$MODEL" --dangerously-skip-permissions --verbose --print \
+      --name "$PLAN" --session-id "$session_id" \
       --append-system-prompt "$(cat "$AGENT_INSTRUCTIONS")" \
-      -p "Execute plan: $PLAN_PATH — Worktree: $WORKTREE_DIR" 2>&1 | tee "$outfile" &
+      "Execute plan: $PLAN_PATH - Worktree: $WORKTREE_DIR - Session: $session_id" 2>&1 | tee "$outfile" &
     wait $!
     EXIT_CODE=$?
     set -e
@@ -157,9 +159,10 @@ for i in $(seq 1 $MAX_ITERATIONS); do
     exit 0
   fi
 
-  echo "--- Iteration $i ---"
+  SESSION_ID="$(uuidgen)"
+  echo "--- Iteration $i (session: $SESSION_ID) ---"
 
-  if ! run_claude_with_retry; then
+  if ! run_claude_with_retry "$SESSION_ID"; then
     $INTERRUPTED && exit 130
     echo "Iteration $i failed due to persistent Claude errors. Continuing..."
     sleep 10
