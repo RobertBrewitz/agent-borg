@@ -48,7 +48,7 @@ Multiple agents may run concurrently on different plans. Never touch another age
    - Run the `@cargo-lint` skill (clippy with `-D warnings`, auto-fix).
    - Stage all changes (including lint auto-fixes): `git add -A`
    - Run `@self-review` light mode on the step's diff.
-   - Commit after each step.
+   - Commit after each step. Include `Session: <session-id>` (from your prompt) in the commit message trailer.
    - Update your progress file with completed step and next step number.
    - Append gotchas to `AGENTS.md`.
    - For out-of-scope work discovered during execution, create a file in `$PROJECT_ROOT/plans/backlog/<short-name>.md` (see Backlog Items format below).

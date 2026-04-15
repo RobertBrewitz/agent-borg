@@ -72,10 +72,10 @@ fi
 # Resolve the agent directory (where this script and CLAUDE.md live)
 # Must happen BEFORE cd into worktree, since $0 may be a relative path
 AGENT_DIR="$(cd "$(dirname "$0")" && pwd)"
-AGENT_INSTRUCTIONS="$AGENT_DIR/CLAUDE.md"
+AGENT_INSTRUCTIONS="$AGENT_DIR/INSTRUCTIONS.md"
 
 if [ ! -f "$AGENT_INSTRUCTIONS" ]; then
-  echo "Error: CLAUDE.md not found at $AGENT_INSTRUCTIONS"
+  echo "Error: INSTRUCTIONS.md not found at $AGENT_INSTRUCTIONS"
   exit 1
 fi
 
