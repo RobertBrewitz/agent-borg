@@ -2,6 +2,10 @@
 
 Autonomous coding agent.
 
+## Response Style
+
+Read and activate the caveman skill (`skills/caveman/SKILL.md`) at full intensity at session start. Caveman mode stays on for all responses.
+
 ## Skills
 
 Skills live in `~/.claude/skills/` (global) and `.claude/skills/` (project-local, in the worktree root). Each skill has a `SKILL.md` file.

@@ -101,7 +101,7 @@ run_claude_with_retry() {
     claude --model "$MODEL" --dangerously-skip-permissions --verbose --print \
       --name "$PLAN" --session-id "$session_id" \
       --append-system-prompt "$(cat "$AGENT_INSTRUCTIONS")" \
-      "Execute plan: $PLAN_PATH - Worktree: $WORKTREE_DIR - Session: $session_id" 2>&1 | tee "$outfile" &
+      "Execute plan: $PLAN_PATH — Worktree: $WORKTREE_DIR — Session: $session_id" 2>&1 | tee "$outfile" &
     wait $!
     EXIT_CODE=$?
     set -e
