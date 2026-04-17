@@ -19,7 +19,7 @@ cleanup() {
 }
 trap cleanup INT TERM
 
-MODEL="claude-opus-4-6"
+MODEL="claude-opus-4-7"
 MAX_ITERATIONS=10
 
 if [ -z "$1" ] || [ -z "$2" ]; then
