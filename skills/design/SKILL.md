@@ -95,7 +95,7 @@ Keep track of which backlog files fed into the design. Delete the consumed backl
 **Implementation (if continuing):**
 
 - Ask: "Ready to set up for implementation?"
-- Use writing-plans to create detailed implementation plan
+- Use @write-plan to create detailed implementation plan
 
 ## Key Principles
 

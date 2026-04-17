@@ -51,8 +51,8 @@ If no plans exist in `todo/` or `in-progress/`, tell the user and suggest using 
 
 1. Read the full plan (all stage files for folder plans).
 2. Collect all `@skill-name` references. Read each skill's `SKILL.md`.
-4. Read `agent/AGENTS.md` for patterns and gotchas.
-5. If a progress file exists at `$PLANS_DIR/progress/<plan-name>.md`, read it and determine resume point.
+3. Read `agent/AGENTS.md` for patterns and gotchas.
+4. If a progress file exists at `$PLANS_DIR/progress/<plan-name>.md`, read it and determine resume point.
 
 **Present a summary to the user:**
 
@@ -191,7 +191,7 @@ Commits: <count>
 Branch: <branch-name>
 ```
 
-5. Ask: "Want to merge to main now, or leave in done/ for later? (Use `/merge-plan` to build a merge plan, then `/merge` to execute it.)"
+5. Ask: "Want to merge to main now, or leave in done/ for later? (Use `@merge` to merge the completed plan into main.)"
 
 ## Progress File Format
 

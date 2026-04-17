@@ -45,7 +45,7 @@ All plan paths below use `$PLANS_DIR` as the root.
 
 ## Pass 1 — Structural Review
 
-Check against `writing-plans` conventions. For each item, assign PASS, FAIL, or WARN.
+Check against `write-plan` conventions. For each item, assign PASS, BLOCKER, WARNING, or NOTE (see **Severities** below).
 
 **Header checks:**
 
@@ -78,7 +78,7 @@ Check against `writing-plans` conventions. For each item, assign PASS, FAIL, or 
 
 Verify the plan against loaded skills first. **You MAY also read source code, Grep, and Glob** to fill gaps, verify file existence, check signatures, or confirm details that skills don't cover. Skills-first, code as needed.
 
-For each item, assign PASS, BLOCKER, WARN, or UNVERIFIABLE.
+For each item, assign PASS, BLOCKER, WARNING, NOTE, or UNVERIFIABLE (see **Severities** below).
 
 | Check                            | How to verify                                                             |
 | -------------------------------- | ------------------------------------------------------------------------- |
@@ -110,7 +110,7 @@ Print the report to the conversation. For folder plans, review each stage separa
 | # | Check | Status | Detail |
 |---|-------|--------|--------|
 | 1 | Header: Goal | PASS | |
-| 2 | Header: Sub-skills | FAIL | Missing > **For Claude:** line |
+| 2 | Header: Sub-skills | BLOCKER | Missing > **For Claude:** line |
 | ... | ... | ... | ... |
 
 ### Feasibility Review
@@ -160,8 +160,7 @@ If the verdict is anything other than **READY**, rewrite the plan to fix all iss
 
 **What to fix:**
 
-- **BLOCKERs** — Must fix. Wrong paths → correct them. Missing files → update Create/Modify lines. Wrong signatures → look up the real ones from skills or code and update.
-- **FAILs** (structural) — Must fix. Missing header fields → add them. Wrong heading levels → correct them. Missing Run/Expected pairs → add them. Placeholder code → write real code.
+- **BLOCKERs** — Must fix. Wrong paths → correct them. Missing files → update Create/Modify lines. Wrong signatures → look up the real ones from skills or code and update. Missing header fields → add them. Wrong heading levels → correct them. Missing Run/Expected pairs → add them. Placeholder code → write real code.
 - **WARNINGs** — Should fix. Bare paths without line ranges → add ranges. Compound steps → split them.
 - **NOTEs** — Fix if straightforward, skip if subjective.
 - **UNVERIFIABLE** — Cannot fix without more information. Leave these and flag to user.

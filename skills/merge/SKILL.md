@@ -28,7 +28,7 @@ PLANS_DIR="$PROJECT_ROOT/plans"
 ### 1a. List Done Plans
 
 ```bash
-PROJECT_ROOT="$(git rev-parse --git-common-dir)" && ls "$PROJECT_ROOT/plans/done/"
+ls "$PLANS_DIR/done/"
 ```
 
 ### 1b. Match Plans to Branches
