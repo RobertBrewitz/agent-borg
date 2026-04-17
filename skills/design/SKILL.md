@@ -30,14 +30,36 @@ All plan paths below use `$PLANS_DIR` as the root.
 
 **Understanding the idea:**
 
-- Read `AGENTS.md` in the project root (or git worktree root) first to understand the project context. Do NOT read the entire codebase or browse files until you understand the goal of the design session. Do NOT read the contents of files in the `plans/` folder — those are managed by other skills
+- Read `AGENTS.md` in the project root (or git worktree root) first to understand the project context. Do NOT read the contents of files in the `plans/` folder — those are managed by other skills
 - Ask questions one at a time to refine the idea
 - Prefer multiple choice questions when possible, but open-ended is fine too
 - Only one question per message - if a topic needs more exploration, break it into multiple questions
 - Focus on understanding: purpose, constraints, success criteria
 
+**Investigate before asking:**
+
+Before asking the user a question, consider whether the answer is already in the codebase. If it might be, look first — read relevant files, grep for patterns, check existing implementations. Only ask the user what can't be answered by reading code.
+
+Examples of things you should look up yourself:
+- What frameworks, libraries, or patterns the project already uses
+- How similar features are currently implemented
+- What data structures, types, or APIs already exist
+- File organization and naming conventions
+- How tests are structured
+- What configuration or infrastructure is in place
+
+Examples of things you should still ask the user:
+- Which approach they prefer among trade-offs
+- Business requirements, priorities, and constraints
+- Whether an existing pattern should be followed or changed
+- UX preferences and product decisions
+- Scope — what's in and what's out
+
+When you investigate, briefly share what you found ("I see the project already uses X for Y — should we follow that pattern here?"). This shows your work and lets the user correct wrong assumptions early.
+
 **Exploring approaches:**
 
+- Before proposing approaches, explore the codebase to ground your options in what actually exists — existing patterns, dependencies, and constraints should inform your trade-offs, not guesswork
 - Propose 2-3 different approaches with trade-offs
 - Present options conversationally with your recommendation and reasoning
 - Lead with your recommended option and explain why
