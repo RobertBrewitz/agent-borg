@@ -22,16 +22,14 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Announce at start:** "I'm using the write-plan skill."
 
-## Resolve Plans Directory
+## Plan Directory
 
-Before accessing any plan files, resolve the project root and plans directory. The bare repository IS the project root — `git rev-parse --git-common-dir` returns it directly (do NOT go to its parent):
+See `@plan-directory` for the shared `plans/` layout, lifecycle, nested-git-repo rule, and backlog cleanup protocol.
 
 ```bash
 PROJECT_ROOT="$(git rev-parse --git-common-dir)"
 PLANS_DIR="$PROJECT_ROOT/plans"
 ```
-
-All plan paths below use `$PLANS_DIR` as the root.
 
 ## First: New or Existing?
 
@@ -81,7 +79,7 @@ Read every selected skill (`skills/<name>/SKILL.md`). These are your primary ref
 
 **Goal:** [One sentence describing what this builds]
 
-**Branch:** branch-name (no backticks — plain text only, parsed by hive.sh)
+**Branch:** branch-name (no backticks — plain text only, parsed by /hive)
 
 **Architecture:** [2-3 sentences about approach]
 
@@ -124,13 +122,7 @@ Run: `git add src/path/file.rs && git commit -m "feat: add specific feature"`
 
 ## Backlog Cleanup
 
-If any backlog files from `plans/backlog/` were used as input for this plan (directly or via a design session), include a task in the plan that deletes the consumed backlog files:
-
-1. Delete the consumed files from `$PLANS_DIR/backlog/`
-2. Any new out-of-scope work discovered during planning should be created as new backlog files (see CLAUDE.md Backlog Items format)
-3. Commit in the plans repo (`$PLANS_DIR`)
-
-This task should typically be the last task in the plan.
+If any backlog files were used as input for this plan (directly or via a design session), and the design skill didn't already delete them, include a task in the plan that deletes the consumed files from `$PLANS_DIR/backlog/` and commits in the plans repo. See `@plan-directory` for the protocol. This task should typically be the last task in the plan.
 
 ## Skill Gap Report
 
@@ -161,7 +153,7 @@ After saving the plan:
 
 1. Check if a design document exists for this feature (e.g. `$PLANS_DIR/design/<topic>-design.md` or `$PLANS_DIR/design/<topic>-design/`). If one exists, delete it.
 2. Check if any review files exist for this plan (e.g. `$PLANS_DIR/review/<plan-name>-self-review.md`). If any exist, delete them — they're stale after a rewrite.
-3. Commit all deletions. Run all git commands from `$PLANS_DIR` — it is its own git repo.
+3. Commit all deletions in the plans repo.
 
 ## Remember
 

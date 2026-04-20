@@ -22,16 +22,14 @@ Review-and-rewrite gate that checks a plan for structural quality AND codebase f
 - When resuming a plan written by a different agent or in a previous session
 - When a plan has been edited and needs re-verification
 
-## Resolve Plans Directory
+## Plan Directory
 
-Before accessing any plan files, resolve the project root and plans directory. The bare repository IS the project root — `git rev-parse --git-common-dir` returns it directly (do NOT go to its parent):
+See `@plan-directory` for the shared `plans/` layout, lifecycle, nested-git-repo rule, and backlog cleanup protocol.
 
 ```bash
 PROJECT_ROOT="$(git rev-parse --git-common-dir)"
 PLANS_DIR="$PROJECT_ROOT/plans"
 ```
-
-All plan paths below use `$PLANS_DIR` as the root.
 
 ## Invocation
 
@@ -183,7 +181,7 @@ Run both passes again on the rewritten plan. Print a new report. This loop repea
 
 After the final verdict, act on it:
 
-- **READY** — Move the plan from `draft/` to `todo/`. Delete any review files for this plan (e.g. `$PLANS_DIR/review/<plan-name>-self-review.md`) — they're stale after verification rewrites. Commit the move and deletions. Run all git commands from `$PLANS_DIR` — it is its own git repo.
+- **READY** — Move the plan from `draft/` to `todo/`. Delete any review files for this plan (e.g. `$PLANS_DIR/review/<plan-name>-self-review.md`) — they're stale after verification rewrites. Commit the move and deletions in the plans repo.
 - **NEEDS SKILLS** — Leave the plan in `draft/`. List the specific skills needed and ask the user to provide them before re-running verification.
 - **NOT READY after 2 rewrites** — Leave the plan in `draft/`. Show the remaining issues and ask the user for guidance.
 

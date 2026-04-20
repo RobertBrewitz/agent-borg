@@ -1,6 +1,6 @@
 ---
 name: implement-plan
-description: Interactive plan execution with user checkpoints between tasks. More collaborative than borg.sh — user can steer, skip, modify, or course-correct mid-flight.
+description: Interactive plan execution with user checkpoints between tasks. More collaborative than /hive — user can steer, skip, modify, or course-correct mid-flight.
 ---
 
 # Implement Plan
@@ -12,7 +12,7 @@ description: Interactive plan execution with user checkpoints between tasks. Mor
 
 ## Overview
 
-Execute a verified plan step-by-step inside an interactive Claude Code session. Unlike `borg.sh` (headless, autonomous looping), this skill keeps the user in the loop with checkpoints between tasks. The user can review results, modify approach, skip tasks, or course-correct at any time.
+Execute a verified plan step-by-step inside an interactive Claude Code session. Unlike `/hive` (headless, autonomous dispatch via the `coder` subagent), this skill keeps the user in the loop with checkpoints between tasks. The user can review results, modify approach, skip tasks, or course-correct at any time.
 
 **Announce at start:** "I'm using the implement-plan skill."
 
@@ -20,12 +20,14 @@ Execute a verified plan step-by-step inside an interactive Claude Code session. 
 
 - User wants to execute a plan with oversight
 - Plan needs human judgment at decision points
-- First time running a plan (want to validate the approach interactively before trusting it to borg.sh)
+- First time running a plan (want to validate the approach interactively before trusting it to `/hive`)
 - Resuming a blocked plan that needs human input
 
-**Use borg.sh instead when:** The plan is verified, trusted, and the user wants fully autonomous execution.
+**Use `/hive` instead when:** The plan is verified, trusted, and the user wants fully autonomous execution.
 
-## Resolve Plans Directory
+## Plan Directory
+
+See `@plan-directory` for the shared `plans/` layout, lifecycle, and nested-git-repo rule.
 
 ```bash
 PROJECT_ROOT="$(git rev-parse --git-common-dir)"
@@ -34,9 +36,9 @@ PLANS_DIR="$PROJECT_ROOT/plans"
 
 ## Phase 1: Select Plan
 
-List plans from `$PLANS_DIR/todo/` and `$PLANS_DIR/in-progress/`. Show both `.md` files and subdirectories (folder plans). For each, check `$PLANS_DIR/progress/<plan-name>.md` to indicate whether it's resumable.
+List plans from `$PLANS_DIR/todo/` and `$PLANS_DIR/in-progress/`. Show both `.md` files and subdirectories (folder plans). For each, check `$PLANS_DIR/resume/<plan-name>.md` to indicate whether it's resumable.
 
-**Note:** `in-progress/` is internal resume state — plans move there automatically when execution begins. It is not an input directory.
+**Note:** `in-progress/` holds plans currently being executed — plans move there automatically when execution begins. It is not an input directory; the user selects from `todo/`.
 
 Use `AskUserQuestion` to prompt:
 
@@ -52,7 +54,7 @@ If no plans exist in `todo/` or `in-progress/`, tell the user and suggest using 
 1. Read the full plan (all stage files for folder plans).
 2. Collect all `@skill-name` references. Read each skill's `SKILL.md`.
 3. Read `agent/AGENTS.md` for patterns and gotchas.
-4. If a progress file exists at `$PLANS_DIR/progress/<plan-name>.md`, read it and determine resume point.
+4. If a resume file exists at `$PLANS_DIR/resume/<plan-name>.md`, read it and determine resume point.
 
 **Present a summary to the user:**
 
@@ -76,7 +78,7 @@ If "modify" — suggest using `write-plan` to revise, then come back.
 
 Check if we're already in the correct worktree for this plan.
 
-**If a progress file exists** with a worktree path, verify that worktree still exists and is on the correct branch.
+**If a resume file exists** with a worktree path, verify that worktree still exists and is on the correct branch.
 
 **If no worktree exists:**
 
@@ -90,7 +92,7 @@ Check if we're already in the correct worktree for this plan.
 
 ## Phase 4: Execute Plan
 
-Move plan from `todo/` to `in-progress/` (if not already there). Create or update the progress file. Run all plan-directory git commands from `$PLANS_DIR` — it is its own git repo, separate from the project repo.
+Move plan from `todo/` to `in-progress/` (if not already there). Create or update the resume file.
 
 ### Task Loop
 
@@ -111,9 +113,9 @@ Use `AskUserQuestion`:
 - **Question:** "Execute this task?"
 - **Options:** "Go ahead" / "Skip this task" / "Let me modify the approach" / "Stop here for now"
 
-- **"Skip":** Mark task as skipped in progress notes, move to next task.
+- **"Skip":** Mark task as skipped in the resume file, move to next task.
 - **"Modify":** Ask the user what they want to change. Adjust the approach for this task only (don't modify the plan file). Execute the modified version.
-- **"Stop":** Update progress file with current position and exit gracefully.
+- **"Stop":** Update resume file with current position and exit gracefully.
 
 #### 4b. Execute Steps
 
@@ -127,7 +129,7 @@ Execute each step in the task sequentially:
 
 **On step failure:**
 
-Do NOT silently retry 3 times like borg.sh. Instead:
+Do NOT silently retry 3 times the way the `coder` subagent does. Instead:
 
 - Show the error clearly.
 - Use `AskUserQuestion`:
@@ -135,9 +137,9 @@ Do NOT silently retry 3 times like borg.sh. Instead:
   - **Options:** "Fix it and retry" / "Skip this step" / "Modify the approach" / "Stop and mark as blocked"
 
 - **"Fix it":** Diagnose the issue, propose a fix, implement it with user approval, then retry.
-- **"Skip":** Move to next step, note in progress.
+- **"Skip":** Move to next step, note in the resume file.
 - **"Modify":** Discuss alternative approach with user, execute that instead.
-- **"Block":** Move plan to `blocked/`, update progress file with failure context.
+- **"Block":** Move plan to `blocked/`, update resume file with failure context.
 
 #### 4c. Commit
 
@@ -148,7 +150,7 @@ After each task completes (all steps pass):
 
 #### 4d. Checkpoint
 
-After committing, update the progress file and present:
+After committing, update the resume file and present:
 
 ```
 --- Checkpoint: Task <N>/<Total> complete ---
@@ -162,7 +164,7 @@ Use `AskUserQuestion`:
 - **Question:** "Continue to next task?"
 - **Options:** "Continue" / "Take a break (progress saved)" / "Review what we've done"
 
-- **"Break":** Update progress file, tell user how to resume (`/implement-plan` and pick the in-progress plan).
+- **"Break":** Update resume file, tell user how to resume (`/implement-plan` and pick the in-progress plan).
 - **"Review":** Show git log of commits made this session, then ask again.
 
 ### Stage Transitions (folder plans only)
@@ -181,7 +183,7 @@ When all tasks (and stages) are done:
 
 1. Run a final verification (`cargo fmt && cargo check`).
 2. Move plan from `in-progress/` to `done/`.
-3. Delete the progress file.
+3. Delete the resume file.
 4. Show summary:
 
 ```
@@ -193,12 +195,12 @@ Branch: <branch-name>
 
 5. Ask: "Want to merge to main now, or leave in done/ for later? (Use `@merge` to merge the completed plan into main.)"
 
-## Progress File Format
+## Resume File Format
 
 Same format as CLAUDE.md specifies, with additional interactive notes:
 
 ```markdown
-# Progress: <plan-name>
+# Resume: <plan-name>
 
 - **Worktree:** `<path>`
 - **Stage:** 02-core.md (omit for single-file plans)
@@ -223,7 +225,7 @@ During execution, if you discover patterns or gotchas:
 
 - Execute steps without showing the user what you're about to do
 - Silently retry failures — always involve the user
-- Modify the plan file during execution (note deviations in progress file instead)
+- Modify the plan file during execution (note deviations in the resume file instead)
 - Skip the initial context-loading phase
 - Proceed past a failed step without user decision
 - Commit without showing the user what's being committed

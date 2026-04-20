@@ -9,6 +9,15 @@ description: Agent reviews its own code diff for logical errors. Has light mode 
 
 Review your own code changes to catch logical errors, design problems, and things that compile but are wrong. Two modes: light (per-step) and thorough (end-of-plan).
 
+## Plan Directory
+
+See `@plan-directory` for the shared `plans/` layout and nested-git-repo rule. Thorough-mode review files are written under `$PLANS_DIR/review/`.
+
+```bash
+PROJECT_ROOT="$(git rev-parse --git-common-dir)"
+PLANS_DIR="$PROJECT_ROOT/plans"
+```
+
 ## Light Mode (per-step)
 
 Run after each commit during plan execution. Quick scan — fix and move on.
@@ -46,7 +55,7 @@ Run before moving plan to `done/`. Comprehensive review of the full branch diff.
 
 ### Procedure
 
-1. Determine the base branch. Check the plan's progress file or use `main`:
+1. Determine the base branch. Check the plan's resume file or use `main`:
 
 ```bash
 git merge-base main HEAD
@@ -77,7 +86,7 @@ git diff main...HEAD --stat
 - **Public API:** Are new public items intentional? Could anything be `pub(crate)` or private instead?
 - **Panics:** Could any code path panic in production? `unwrap()`, `expect()`, array indexing, `unreachable!()`
 
-6. Write findings to `$PROJECT_ROOT/plans/review/<plan-name>-self-review.md`:
+6. Write findings to `$PLANS_DIR/review/<plan-name>-self-review.md`:
 
 ```markdown
 # Self-Review: <plan-name>

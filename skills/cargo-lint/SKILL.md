@@ -60,7 +60,7 @@ Review the output for warnings (broken intra-doc links, missing docs on public i
 
 ### Retry Logic
 
-If clippy still fails after 3 full cycles of Steps 1-3, write the unresolvable diagnostics to the progress file and report failure. Include the exact compiler output.
+If clippy still fails after 3 full cycles of Steps 1-3, write the unresolvable diagnostics to the resume file and report failure. Include the exact compiler output.
 
 ### Configuration
 

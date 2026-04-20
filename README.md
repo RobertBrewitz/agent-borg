@@ -1,6 +1,6 @@
 # Agent Borg
 
-A set of configuration files and skills that turn [Claude Code](https://docs.anthropic.com/en/docs/claude-code) into an autonomous coding agent. Designed to work with **git worktree** layouts — a bare repository with worktree branches as sibling directories and a shared `plans/` repository at the project root. A dispatcher script (`hive.sh`) scans `plans/todo/`, dispatches one agent per plan (up to a concurrency limit), and waits for them to finish. Each agent (`coder.sh`) creates or reuses a worktree, then loops Claude Code until the plan is done or blocked — handling context-window limits by re-invoking Claude (which resumes from the progress file). Progress is tracked per-plan in `plans/progress/`, allowing multiple agents to work on different plans concurrently without contention. Plans are written and verified using dedicated skills before execution begins.
+A set of Claude Code skills and a subagent that turn [Claude Code](https://docs.anthropic.com/en/docs/claude-code) into an autonomous coding pipeline. Designed to work with **git worktree** layouts — a bare repository with worktree branches as sibling directories and a shared `plans/` repository at the project root. The `/hive` slash command scans `plans/todo/`, dispatches one `coder` subagent per plan (up to a concurrency limit), and waits for them to finish. Each coder creates or reuses a worktree, executes the plan end-to-end inside its own context window, and moves the plan to `done/` or `blocked/`. Resume state is tracked per-plan in `plans/resume/`, so a subsequent `/hive` can pick up any plan whose coder ran out of context. Plans are written and verified using dedicated skills before execution begins.
 
 ## **Important**
 
@@ -15,7 +15,7 @@ A set of configuration files and skills that turn [Claude Code](https://docs.ant
 
 ## Project Layout
 
-The agent expects a bare repository with worktrees. The `plans/` directory is its own git repository, sibling to the worktrees:
+The pipeline expects a bare repository with worktrees. The `plans/` directory is its own git repository, sibling to the worktrees:
 
 ```
 <project-root>/            # bare git repository (contains HEAD, objects/, refs/, etc.)
@@ -25,12 +25,12 @@ The agent expects a bare repository with worktrees. The `plans/` directory is it
 │   ├── backlog/           # task summaries — ideas/work items to turn into plans
 │   ├── design/            # design docs from /design skill
 │   ├── draft/             # plans being written or revised
-│   ├── todo/              # verified plans, ready for execution (polled by hive.sh)
+│   ├── todo/              # verified plans, ready for execution (scanned by /hive)
 │   ├── in-progress/       # actively being worked on
-│   ├── progress/          # per-plan progress files (one per active plan)
+│   ├── resume/            # per-plan resume files (one per active plan)
 │   ├── review/            # verification reports
 │   ├── done/              # completed, ready to merge
-│   ├── merge/             # merge plans (human-only, not polled by hive.sh)
+│   ├── merge/             # merge plans (human-only, not scanned by /hive)
 │   ├── archive/           # merged to main, historical record
 │   └── blocked/
 ├── worktrees/
@@ -41,18 +41,18 @@ The agent expects a bare repository with worktrees. The `plans/` directory is it
 
 ## Setup
 
-1. Copy the contents of the `agent/` folder into each worktree root (or the main worktree).
-2. Create a `plans/` directory at `<project-root>/` and initialize it as its own git repo (`git init` inside `plans/`). Create the subdirectories: `backlog/`, `design/`, `draft/`, `todo/`, `in-progress/`, `progress/`, `review/`, `done/`, `merge/`, `archive/`, `blocked/`.
-3. Copy the contents of the `skills/` folder to `~/.claude/skills/` or the project's `.claude/skills/` folder. Alternatively, use `link-skills.sh` to symlink them.
+1. Create a `plans/` directory at `<project-root>/` and initialize it as its own git repo (`git init` inside `plans/`). Create the subdirectories: `backlog/`, `design/`, `draft/`, `todo/`, `in-progress/`, `resume/`, `review/`, `done/`, `merge/`, `archive/`, `blocked/`.
+2. Copy the `agent/` folder into each worktree root (or the main worktree). It holds `AGENTS.md` (the shared-knowledge file) and `coder.md` (the subagent definition).
+3. Link `agent/coder.md` into `~/.claude/agents/coder.md` (or the project-local `.claude/agents/coder.md`) so Claude Code can discover the subagent. Symlink or copy — either works.
+4. Copy the contents of `skills/` to `~/.claude/skills/` or the project's `.claude/skills/` folder. Alternatively, run `link-skills.sh` to symlink them.
 
 ## Agent Files
 
-These files live in the `agent/` directory (and are copied to the worktree root during setup):
+These files live in the `agent/` directory (copied into each worktree root during setup):
 
-- **`CLAUDE.md`** — Instructions that Claude Code reads on startup. Defines the worktree environment, agent workflow, plan execution rules, handover format, and how to use skills. ONE plan per session. The agent resolves the project root via `git rev-parse --git-common-dir` and locates plans at `$PROJECT_ROOT/plans/`.
-- **`coder.sh`** — Runs Claude Code in a loop on a single plan. Usage: `./coder.sh <branch> <path-to-plan>`. Creates or reuses a worktree for the given branch, then loops until the plan is done or blocked, handling context-window limits by re-invoking Claude (which resumes from the progress file). Includes retry logic with exponential backoff for transient API errors. Run multiple instances in parallel for concurrent plans.
-- **`hive.sh`** — Dispatcher that scans `plans/todo/` once, reads each plan's `**Branch:**` metadata, and dispatches a `coder.sh` instance per plan (up to `--max-concurrent N`, default 3). Waits for all agents to finish and reports completion status. Handles graceful shutdown on SIGINT/SIGTERM.
-- **`AGENTS.md`** — Shared knowledge base for patterns and gotchas discovered during execution. Agents append to this file so future iterations avoid repeating mistakes.
+- **`CLAUDE.md`** — Instructions Claude Code reads on startup in the worktree. Defines the worktree environment and the day-to-day workflow for interactive sessions. The pipeline resolves the project root via `git rev-parse --git-common-dir` and locates plans at `$PROJECT_ROOT/plans/`.
+- **`coder.md`** — Subagent definition used by `/hive`. A coder owns one plan end-to-end: creates or reuses a worktree, executes each step with quality gates, runs the end-of-plan quality gate, and moves the plan to `done/` or `blocked/`. Link this into `~/.claude/agents/` (or project-local `.claude/agents/`) so Claude Code's Task tool can invoke it.
+- **`AGENTS.md`** — Shared knowledge base for patterns and gotchas discovered during execution. Coders append to this file so future runs avoid repeating mistakes.
 
 ## Skills
 
@@ -62,6 +62,7 @@ These files live in the `agent/` directory (and are copied to the worktree root 
 - **`write-plan`** — Reads designs from `plans/design/`, creates detailed implementation plans in `plans/draft/`. Exact file paths, complete code, explicit commands. No tests. Single-file or multi-stage folders.
 - **`verify-plan`** — Reads plans from `plans/draft/`, validates structure and feasibility. Rewrites the plan to fix any issues found, re-verifies, and promotes passing plans to `plans/todo/`.
 - **`implement-plan`** — Reads plans from `plans/todo/`, executes interactively with user checkpoints. Completed plans go to `plans/done/`.
+- **`hive`** — One-shot dispatcher. Scans `plans/todo/` (plus stale `plans/in-progress/`), launches `coder` subagents in parallel up to a concurrency limit, and reports results.
 - **`merge-plan`** — Reads completed plans from `plans/done/`, analyzes worktree branches, writes merge plans to `plans/merge/`.
 - **`merge`** — Reads merge plans from `plans/merge/`, executes squash-merges interactively with human oversight. Archives plans to `plans/archive/`.
 
@@ -75,23 +76,23 @@ These files live in the `agent/` directory (and are copied to the worktree root 
 
 ```
 backlog/  →  design/  →  draft/  →  todo/  →  in-progress/  →  done/  →  archive/
-             (design)   (write-plan) (verify-plan)  (implement-plan)       ↑
-                                       review ↺                             │
-                                         rewrite                            │
-                                             ↓                              │
-                                         blocked/                           │
-                                                                            │
-done/  →  merge/  →  (run via /merge)  ─────────────────────────────────────┘
+             (design)   (write-plan) (verify-plan)  (/hive or         ↑
+                                       review ↺    implement-plan)   │
+                                         rewrite                      │
+                                             ↓                        │
+                                         blocked/                     │
+                                                                      │
+done/  →  merge/  →  (run via /merge)  ──────────────────────────────┘
           (merge-plan)
 ```
 
 - **backlog/** — Task summaries: ideas and work items to be turned into plans. Each file is one task. Consumed by `/design`.
 - **design/** — Design docs from `/design`. Feed into `write-plan`.
 - **draft/** — Plan is being written by `write-plan`, or being rewritten by `verify-plan`.
-- **todo/** — Plan is verified and ready for execution. Polled by `hive.sh`. Only `verify-plan` promotes plans here.
-- **in-progress/** — Plan is actively being worked on (a worktree exists for it). Internal to `implement-plan` / `coder.sh`.
+- **todo/** — Plan is verified and ready for execution. Scanned by `/hive`. Only `verify-plan` promotes plans here.
+- **in-progress/** — Plan is actively being worked on (a worktree exists for it). A stale in-progress plan (no recent resume-file activity) is recovered back to `todo/` by the next `/hive` run.
 - **merge/** — Merge plans from `/merge-plan`. Requires human oversight, run via `/merge`.
-- **progress/** — Per-plan progress files. Exists while the plan is in-progress; deleted when done.
+- **resume/** — Per-plan resume files. Exists while the plan is in-progress; deleted when done.
 - **review/** — Quality reports from `self-review` thorough mode.
 - **done/** — All steps completed successfully. Branch ready to merge.
 - **archive/** — Merged to main. Historical record.
@@ -99,20 +100,16 @@ done/  →  merge/  →  (run via /merge)  ────────────�
 
 ## Autonomous Execution
 
-### Single plan
+Run the `/hive` slash command from an interactive Claude Code session inside any worktree:
 
-```bash
-./coder.sh feature-auth plans/todo/add-auth.md
+```
+/hive                  # default: up to 3 concurrent coder subagents
+/hive 5                # up to 5 concurrent
+/hive --retry-blocked  # move blocked/ plans back to todo/ first, then dispatch
+/hive --only add-auth  # dispatch a single named plan
 ```
 
-### All plans in todo/
-
-```bash
-./hive.sh                    # default: 3 concurrent agents
-./hive.sh --max-concurrent 5 # up to 5 concurrent agents
-```
-
-`hive.sh` reads the `**Branch:**` field from each plan to determine the worktree branch name. If absent, it falls back to the plan name.
+`/hive` reads each plan's `**Branch:**` field to determine the worktree branch (falling back to the plan name if absent), launches one `coder` subagent per plan via the Task tool, waits for the batch, and reports outcomes (done / blocked / stalled). A stalled plan is one whose coder ran out of context mid-plan — re-run `/hive` and a fresh coder resumes from the plan's resume file.
 
 ## License
 

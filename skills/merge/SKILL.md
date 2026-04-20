@@ -16,7 +16,9 @@ End-to-end merge: discover done plans, match to worktree branches, analyze diffs
 
 **Announce at start:** "I'm using the merge skill."
 
-## Resolve Paths
+## Plan Directory
+
+See `@plan-directory` for the shared `plans/` layout, lifecycle, and nested-git-repo rule.
 
 ```bash
 PROJECT_ROOT="$(git rev-parse --git-common-dir)"
@@ -189,7 +191,7 @@ Proceed automatically after landing:
    git branch -D <branch>
    ```
 3. Remove integration worktree then branch (same order, same flags).
-4. Commit the plan moves (run git commands from `$PLANS_DIR` — it is its own git repo, separate from the project repo).
+4. Commit the plan moves in the plans repo.
 
 Show final output:
 
